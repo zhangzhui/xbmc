@@ -1,21 +1,9 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #pragma once
@@ -68,21 +56,35 @@ namespace XBMCAddon
     /// @param thumbnailImage       __Deprecated. Use setArt__
     /// @param path                 [opt] string
     ///
+    ///
+    ///-----------------------------------------------------------------------
+    /// @python_v16 **iconImage** and **thumbnailImage** are deprecated. Use **setArt()**.
+    ///
+    /// **Example:**
+    /// ~~~~~~~~~~~~~{.py}
+    /// ...
+    /// listitem = xbmcgui.ListItem('Casino Royale')
+    /// ...
+    /// ~~~~~~~~~~~~~
     class ListItem : public AddonClass
     {
     public:
 #if !defined SWIG && !defined DOXYGEN_SHOULD_SKIP_THIS
       CFileItemPtr item;
+      bool m_offscreen;
 #endif
 
       ListItem(const String& label = emptyString,
                const String& label2 = emptyString,
                const String& iconImage = emptyString,
                const String& thumbnailImage = emptyString,
-               const String& path = emptyString);
+               const String& path = emptyString,
+               bool offscreen = false);
 
-#ifndef SWIG
-      inline ListItem(CFileItemPtr pitem) : item(pitem) {}
+#if !defined SWIG && !defined DOXYGEN_SHOULD_SKIP_THIS
+      inline explicit ListItem(CFileItemPtr pitem) :
+        item(pitem), m_offscreen(false)
+      {}
 
       static inline AddonClass::Ref<ListItem> fromString(const String& str)
       {
@@ -92,7 +94,7 @@ namespace XBMCAddon
       }
 #endif
 
-      virtual ~ListItem();
+      ~ListItem() override;
 
 #ifdef DOXYGEN_SHOULD_USE_THIS
       ///
@@ -110,7 +112,7 @@ namespace XBMCAddon
       /// ~~~~~~~~~~~~~{.py}
       /// ...
       /// # getLabel()
-      /// label = self.list.getSelectedItem().getLabel()
+      /// label = listitem.getLabel()
       /// ...
       /// ~~~~~~~~~~~~~
       ///
@@ -135,7 +137,7 @@ namespace XBMCAddon
       /// ~~~~~~~~~~~~~{.py}
       /// ...
       /// # getLabel2()
-      /// label = self.list.getSelectedItem().getLabel2()
+      /// label = listitem.getLabel2()
       /// ...
       /// ~~~~~~~~~~~~~
       ///
@@ -160,7 +162,7 @@ namespace XBMCAddon
       /// ~~~~~~~~~~~~~{.py}
       /// ...
       /// # setLabel(label)
-      /// self.list.getSelectedItem().setLabel('Casino Royale')
+      /// listitem.setLabel('Casino Royale')
       /// ...
       /// ~~~~~~~~~~~~~
       ///
@@ -185,7 +187,7 @@ namespace XBMCAddon
       /// ~~~~~~~~~~~~~{.py}
       /// ...
       /// # setLabel2(label)
-      /// self.list.getSelectedItem().setLabel2('Casino Royale')
+      /// listitem.setLabel2('Casino Royale')
       /// ...
       /// ~~~~~~~~~~~~~
       ///
@@ -199,7 +201,7 @@ namespace XBMCAddon
       /// \ingroup python_xbmcgui_listitem
       /// @brief \python_func{ setIconImage(iconImage) }
       ///-----------------------------------------------------------------------
-      /// @warning Deprecated. Use setArt
+      /// @python_v16 Deprecated. Use **setArt()**.
       ///
       setIconImage(...);
 #else
@@ -211,7 +213,7 @@ namespace XBMCAddon
       /// \ingroup python_xbmcgui_listitem
       /// @brief \python_func{ setThumbnailImage(thumbFilename) }
       ///-----------------------------------------------------------------------
-      /// @warning Deprecated. Use setArt
+      /// @python_v16 Deprecated. Use **setArt()**.
       ///
       setThumbnailImage(...);
 #else
@@ -241,18 +243,146 @@ namespace XBMCAddon
       ///
       ///
       ///-----------------------------------------------------------------------
+      /// @python_v13 New function added.
+      /// @python_v16 Added new label **icon**.
       ///
       /// **Example:**
       /// ~~~~~~~~~~~~~{.py}
       /// ...
       /// # setArt(values)
-      /// self.list.getSelectedItem().setArt({ 'poster': 'poster.png', 'banner' : 'banner.png' })
+      /// listitem.setArt({ 'poster': 'poster.png', 'banner' : 'banner.png' })
       /// ...
       /// ~~~~~~~~~~~~~
       ///
       setArt(...);
 #else
       void setArt(const Properties& dictionary);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ setIsFolder(isFolder) }
+      ///-----------------------------------------------------------------------
+      /// Sets if this listitem is a folder.
+      ///
+      /// @param isFolder            bool - True=folder / False=not a folder (default).
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      ///
+      /// @python_v18 New function added.
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// # setIsFolder(isFolder)
+      /// listitem.setIsFolder(True)
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      setIsFolder(...);
+#else
+      void setIsFolder(bool isFolder);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ setUniqueIDs(values, defaultrating) }
+      ///-----------------------------------------------------------------------
+      /// Sets the listitem's uniqueID
+      ///
+      /// @param values             dictionary - pairs of `{ label: value }`.
+      /// @param defaultrating      [opt] string - the name of default rating.
+      ///
+      ///  - Some example values (any string possible):
+      ///  | Label         | Type                                              |
+      ///  |:-------------:|:--------------------------------------------------|
+      ///  | imdb          | string - uniqueid name
+      ///  | tvdb          | string - uniqueid name
+      ///  | tmdb          | string - uniqueid name
+      ///  | anidb         | string - uniqueid name
+      ///
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// # setUniqueIDs(values, defaultrating)
+      /// listitem.setUniqueIDs({ 'imdb': 'tt8938399', 'tmdb' : '9837493' }, "imdb")
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      setUniqueIDs(...);
+#else
+      void setUniqueIDs(const Properties& dictionary, const String& defaultrating = "");
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ setRating(type, rating, votes = 0, defaultt = False) }
+      ///-----------------------------------------------------------------------
+      /// Sets a listitem's rating. It needs at least type and rating param
+      ///
+      /// @param type       string - the type of the rating. Any string.
+      /// @param rating     float - the value of the rating.
+      /// @param votes      int - the number of votes. Default 0.
+      /// @param defaultt   bool - is the default rating?. Default False.
+      ///  - Some example type (any string possible):
+      ///  | Label         | Type                                              |
+      ///  |:-------------:|:--------------------------------------------------|
+      ///  | imdb          | string - rating type
+      ///  | tvdb          | string - rating type
+      ///  | tmdb          | string - rating type
+      ///  | anidb         | string - rating type
+      ///
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// # setRating(type, rating, votes, defaultt))
+      /// listitem.setRating("imdb", 4.6, 8940, True)
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      setRating(...);
+#else
+      void setRating(std::string type, float rating, int votes = 0, bool defaultt = false);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ addSeason(number, name = "") }
+      ///-----------------------------------------------------------------------
+      /// Add a season with name to a listitem. It needs at least the season number
+      ///
+      /// @param number     int - the number of the season.
+      /// @param name       string - the name of the season. Default "".
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      ///
+      /// @python_v18 New function added.
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// # addSeason(number, name))
+      /// listitem.addSeason(1, "Murder House")
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      addSeason(...);
+#else
+      void addSeason(int number, std::string name = "");
 #endif
 
 #ifdef DOXYGEN_SHOULD_USE_THIS
@@ -276,19 +406,115 @@ namespace XBMCAddon
       ///  | icon          | string - image path
       ///
       ///
-      ///
       ///-----------------------------------------------------------------------
+      /// @python_v17 New function added.
       ///
       /// **Example:**
       /// ~~~~~~~~~~~~~{.py}
       /// ...
-      /// poster = self.list.getSelectedItem().getArt('poster')
+      /// poster = listitem.getArt('poster')
       /// ...
       /// ~~~~~~~~~~~~~
       ///
       getArt(key);
 #else
       String getArt(const char* key);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ getUniqueID(key) }
+      ///-----------------------------------------------------------------------
+      /// Returns a listitem uniqueID as a string, similar to an infolabel.\n
+      ///
+      /// @param key            string - uniqueID name.
+      /// - Some default uniqueID values (any string possible):
+      ///  | Label         | Type                                             |
+      ///  |---------------|--------------------------------------------------|
+      ///  | imdb          | string - uniqueid name
+      ///  | tvdb          | string - uniqueid name
+      ///  | tmdb          | string - uniqueid name
+      ///  | anidb         | string - uniqueid name
+      ///
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// uniqueID = listitem.getUniqueID('imdb')
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      getUniqueID(key);
+#else
+      String getUniqueID(const char* key);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ getRating(key) }
+      ///-----------------------------------------------------------------------
+      /// Returns a listitem rating as a float.\n
+      ///
+      /// @param key            string - rating type.
+      /// - Some default key values (any string possible):
+      ///  | Label         | Type                                             |
+      ///  |---------------|--------------------------------------------------|
+      ///  | imdb          | string - type name
+      ///  | tvdb          | string - type name
+      ///  | tmdb          | string - type name
+      ///  | anidb         | string - type name
+      ///
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// rating = listitem.getRating('imdb')
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      getRating(key);
+#else
+      float getRating(const char* key);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ getVotes(key) }
+      ///-----------------------------------------------------------------------
+      /// Returns a listitem votes as a integer.\n
+      ///
+      /// @param key            string - rating type.
+      /// - Some default key values (any string possible):
+      ///  | Label         | Type                                             |
+      ///  |---------------|--------------------------------------------------|
+      ///  | imdb          | string - type name
+      ///  | tvdb          | string - type name
+      ///  | tmdb          | string - type name
+      ///  | anidb         | string - type name
+      ///
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// votes = listitem.getVotes('imdb')
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      getVotes(key);
+#else
+      int getVotes(const char* key);
 #endif
 
 #ifdef DOXYGEN_SHOULD_USE_THIS
@@ -308,7 +534,7 @@ namespace XBMCAddon
       /// ~~~~~~~~~~~~~{.py}
       /// ...
       /// # select(selected)
-      /// self.list.getSelectedItem().select(True)
+      /// listitem.select(True)
       /// ...
       /// ~~~~~~~~~~~~~
       ///
@@ -334,7 +560,7 @@ namespace XBMCAddon
       /// ~~~~~~~~~~~~~{.py}
       /// ...
       /// # isSelected()
-      /// is = self.list.getSelectedItem().isSelected()
+      /// selected = listitem.isSelected()
       /// ...
       /// ~~~~~~~~~~~~~
       ///
@@ -358,7 +584,8 @@ namespace XBMCAddon
       /// |:------------:|:----------------------|
       /// | video        | Video information
       /// | music        | Music information
-      /// | pictures     | Pictures informantion
+      /// | pictures     | Pictures informanion
+      /// | game         | Game information
       ///
       /// @note To set pictures exif info, prepend `exif:` to the label. Exif values must be passed
       ///       as strings, separate value pairs with a comma. <b>(eg. <c>{'exif:resolution': '720,480'}</c></b>
@@ -377,22 +604,26 @@ namespace XBMCAddon
       /// __Video Values__:
       /// | Info label    | Description                                        |
       /// |--------------:|:---------------------------------------------------|
-      /// | genre         | string (Comedy)
-      /// | country       | string (Germany)
+      /// | genre         | string (Comedy) or list of strings (["Comedy", "Animation", "Drama"])
+      /// | country       | string (Germany) or list of strings (["Germany", "Italy", "France"])
       /// | year          | integer (2009)
       /// | episode       | integer (4)
       /// | season        | integer (1)
+      /// | sortepisode   | integer (4)
+      /// | sortseason    | integer (1)
+      /// | episodeguide  | string (Episode guide)
+      /// | showlink      | string (Battlestar Galactica) or list of strings (["Battlestar Galactica", "Caprica"])
       /// | top250        | integer (192)
       /// | setid         | integer (14)
       /// | tracknumber   | integer (3)
       /// | rating        | float (6.4) - range is 0..10
-      /// | userrating    | integer (9) - range is 1..10
+      /// | userrating    | integer (9) - range is 1..10 (0 to reset)
       /// | watched       | depreciated - use playcount instead
       /// | playcount     | integer (2) - number of times this item has been played
       /// | overlay       | integer (2) - range is `0..7`.  See \ref kodi_guilib_listitem_iconoverlay "Overlay icon types" for values
       /// | cast          | list (["Michal C. Hall","Jennifer Carpenter"]) - if provided a list of tuples cast will be interpreted as castandrole
       /// | castandrole   | list of tuples ([("Michael C. Hall","Dexter"),("Jennifer Carpenter","Debra")])
-      /// | director      | string (Dagur Kari)
+      /// | director      | string (Dagur Kari) or list of strings (["Dagur Kari", "Quentin Tarantino", "Chrstopher Nolan"])
       /// | mpaa          | string (PG-13)
       /// | plot          | string (Long Description)
       /// | plotoutline   | string (Short Description)
@@ -400,43 +631,53 @@ namespace XBMCAddon
       /// | originaltitle | string (Big Fan)
       /// | sorttitle     | string (Big Fan)
       /// | duration      | integer (245) - duration in seconds
-      /// | studio        | string (Warner Bros.)
+      /// | studio        | string (Warner Bros.) or list of strings (["Warner Bros.", "Disney", "Paramount"])
       /// | tagline       | string (An awesome movie) - short description of movie
-      /// | writer        | string (Robert D. Siegel)
+      /// | writer        | string (Robert D. Siegel) or list of strings (["Robert D. Siegel", "Jonathan Nolan", "J.K. Rowling"])
       /// | tvshowtitle   | string (Heroes)
       /// | premiered     | string (2005-03-04)
       /// | status        | string (Continuing) - status of a TVshow
       /// | set           | string (Batman Collection) - name of the collection
+      /// | setoverview   | string (All Batman movies) - overview of the collection
+      /// | tag           | string (cult) or list of strings (["cult", "documentary", "best movies"]) - movie tag
       /// | imdbnumber    | string (tt0110293) - IMDb code
       /// | code          | string (101) - Production code
       /// | aired         | string (2008-12-07)
-      /// | credits       | string (Andy Kaufman) - writing credits
+      /// | credits       | string (Andy Kaufman) or list of strings (["Dagur Kari", "Quentin Tarantino", "Chrstopher Nolan"]) - writing credits
       /// | lastplayed    | string (%Y-%m-%d %h:%m:%s = 2009-04-05 23:16:04)
       /// | album         | string (The Joshua Tree)
       /// | artist        | list (['U2'])
       /// | votes         | string (12345 votes)
+      /// | path          | string (/home/user/movie.avi)
       /// | trailer       | string (/home/user/trailer.avi)
       /// | dateadded     | string (%Y-%m-%d %h:%m:%s = 2009-04-05 23:16:04)
       /// | mediatype     | string - "video", "movie", "tvshow", "season", "episode" or "musicvideo"
       /// | dbid          | integer (23) - Only add this for items which are part of the local db. You also need to set the correct 'mediatype'!
       ///
       /// __Music Values__:
-      /// | Info label    | Description                                        |
-      /// |--------------:|:---------------------------------------------------|
-      /// | tracknumber   | integer (8)
-      /// | discnumber    | integer (2)
-      /// | duration      | integer (245) - duration in seconds
-      /// | year          | integer (1998)
-      /// | genre         | string (Rock)
-      /// | album         | string (Pulse)
-      /// | artist        | string (Muse)
-      /// | title         | string (American Pie)
-      /// | rating        | float - range is between 0 and 10
-      /// | userrating    | integer - range is 1..10
-      /// | lyrics        | string (On a dark desert highway...)
-      /// | playcount     | integer (2) - number of times this item has been played
-      /// | lastplayed    | string (%Y-%m-%d %h:%m:%s = 2009-04-05 23:16:04)
-      /// | mediatype     | string - "music", "song", "album", "artist"
+      /// | Info label               | Description                                        |
+      /// |-------------------------:|:---------------------------------------------------|
+      /// | tracknumber              | integer (8)
+      /// | discnumber               | integer (2)
+      /// | duration                 | integer (245) - duration in seconds
+      /// | year                     | integer (1998)
+      /// | genre                    | string (Rock)
+      /// | album                    | string (Pulse)
+      /// | artist                   | string (Muse)
+      /// | title                    | string (American Pie)
+      /// | rating                   | float - range is between 0 and 10
+      /// | userrating               | integer - range is 1..10
+      /// | lyrics                   | string (On a dark desert highway...)
+      /// | playcount                | integer (2) - number of times this item has been played
+      /// | lastplayed               | string (%Y-%m-%d %h:%m:%s = 2009-04-05 23:16:04)
+      /// | mediatype                | string - "music", "song", "album", "artist"
+      /// | dbid                     | integer (23) - Only add this for items which are part of the local db. You also need to set the correct 'mediatype'!
+      /// | listeners                | integer (25614)
+      /// | musicbrainztrackid       | string (cd1de9af-0b71-4503-9f96-9f5efe27923c)
+      /// | musicbrainzartistid      | string (d87e52c5-bb8d-4da8-b941-9f4928627dc8)
+      /// | musicbrainzalbumid       | string (24944755-2f68-3778-974e-f572a9e30108)
+      /// | musicbrainzalbumartistid | string (d87e52c5-bb8d-4da8-b941-9f4928627dc8)
+      /// | comment                  | string (This is a great song)
       ///
       /// __Picture Values__:
       /// | Info label    | Description                                        |
@@ -445,20 +686,138 @@ namespace XBMCAddon
       /// | picturepath   | string (`/home/username/pictures/img001.jpg`)
       /// | exif*         | string (See \ref kodi_pictures_infotag for valid strings)
       ///
+      /// __Game Values__:
+      /// | Info label    | Description                                        |
+      /// |--------------:|:---------------------------------------------------|
+      /// | title         | string (Super Mario Bros.)
+      /// | platform      | string (Atari 2600)
+      /// | genres        | list (["Action","Strategy"])
+      /// | publisher     | string (Nintendo)
+      /// | developer     | string (Square)
+      /// | overview      | string (Long Description)
+      /// | year          | integer (1980)
+      /// | gameclient    | string (game.libretro.fceumm)
       ///
       ///
       ///-----------------------------------------------------------------------
+      /// @python_v14 Added new label **discnumber**.
+      /// @python_v15 **duration** has to be set in seconds.
+      /// @python_v16 Added new label **mediatype**.
+      /// @python_v17
+      /// Added labels **setid**, **set**, **imdbnumber**, **code**, **dbid** (video), **path** and **userrating**.
+      /// Expanded the possible infoLabels for the option **mediatype**.
+      /// @python_v18 Added new **game** type and associated infolabels.
+      /// Added labels **dbid** (music), **setoverview**, **tag**, **sortepisode**, **sortseason**, **episodeguide**, **showlink**.
+      /// Extended labels **genre**, **country**, **director**, **studio**, **writer**, **tag**, **credits** to also use a list of strings.
       ///
       /// **Example:**
       /// ~~~~~~~~~~~~~{.py}
       /// ...
-      /// self.list.getSelectedItem().setInfo('video', { 'genre': 'Comedy' })
+      /// listitem.setInfo('video', { 'genre': 'Comedy' })
       /// ...
       /// ~~~~~~~~~~~~~
       ///
       setInfo(...);
 #else
       void setInfo(const char* type, const InfoLabelDict& infoLabels);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ setCast(actors) }
+      ///-----------------------------------------------------------------------
+      /// @brief Set cast including thumbnails
+      ///
+      /// @param actors            list of dictionaries (see below for relevant keys)
+      ///
+      /// - Keys:
+      /// | Label         | Description                                     |
+      /// |--------------:|:------------------------------------------------|
+      /// | name          | string (Michael C. Hall)
+      /// | role          | string (Dexter)
+      /// | thumbnail     | string (http://www.someurl.com/someimage.png)
+      /// | order         | integer (1)
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v17 New function added.
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// actors = [{"name": "Actor 1", "role": "role 1"}, {"name": "Actor 2", "role": "role 2"}]
+      /// listitem.setCast(actors)
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      setCast(...);
+#else
+      void setCast(const std::vector<Properties>& actors);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ setAvailableFanart(images) }
+      ///-----------------------------------------------------------------------
+      /// @brief Set available images (needed for video scrapers)
+      ///
+      /// @param images            list of dictionaries (see below for relevant keys)
+      ///
+      /// - Keys:
+      /// | Label         | Description                                     |
+      /// |--------------:|:------------------------------------------------|
+      /// | image         | string (http://www.someurl.com/someimage.png)
+      /// | preview       | [opt] string (http://www.someurl.com/somepreviewimage.png)
+      /// | colors        | [opt] string (either comma separated Kodi hex values ("FFFFFFFF,DDDDDDDD") or TVDB RGB Int Triplets ("|68,69,59|69,70,58|78,78,68|"))
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v18 New function added.
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// fanart = [{"image": path_to_image_1, "preview": path_to_preview_1}, {"image": path_to_image_2, "preview": path_to_preview_2}]
+      /// listitem.setAvailableFanart(fanart)
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      setAvailableFanart(...);
+#else
+      void setAvailableFanart(const std::vector<Properties>& images);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ addAvailableArtwork(images) }
+      ///-----------------------------------------------------------------------
+      /// @brief Add an image to available artworks (needed for video scrapers)
+      ///
+      /// @param url            string (image path url)
+      /// @param art_type       string (image type)
+      /// @param referrer       [opt] string (referrer url)
+      /// @param cache          [opt] string (filename in cache)
+      /// @param post           [opt] bool (use post to retrieve the image, default false)
+      /// @param isgz           [opt] bool (use gzip to retrieve the image, default false)
+      /// @param season         [opt] integer (number of season in case of season thumb)
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v18 New function added.
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// listitem.addAvailableArtwork(path_to_image_1, "thumb")
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      addAvailableArtwork(...);
+#else
+      void addAvailableArtwork(std::string url, std::string art_type = "", std::string referrer = "", std::string cache = "", bool post = false, bool isgz = false, int season = -1);
 #endif
 
 #ifdef DOXYGEN_SHOULD_USE_THIS
@@ -499,7 +858,7 @@ namespace XBMCAddon
       /// **Example:**
       /// ~~~~~~~~~~~~~{.py}
       /// ...
-      /// self.list.getSelectedItem().addStreamInfo('video', { 'codec': 'h264', 'width' : 1280 })
+      /// listitem.addStreamInfo('video', { 'codec': 'h264', 'width' : 1280 })
       /// ...
       /// ~~~~~~~~~~~~~
       ///
@@ -511,28 +870,25 @@ namespace XBMCAddon
 #ifdef DOXYGEN_SHOULD_USE_THIS
       ///
       /// \ingroup python_xbmcgui_listitem
-      /// @brief \python_func{ addContextMenuItems([(label, action,)*], replaceItems) }
+      /// @brief \python_func{ addContextMenuItems([(label, action),*]) }
       ///-----------------------------------------------------------------------
       /// Adds item(s) to the context menu for media lists.
       ///
-      /// @param items               list - [(label, action,)*] A list of tuples consisting of label and action pairs.
+      /// @param items               list - [(label, action),*] A list of tuples consisting of label and action pairs.
       ///   - label           string or unicode - item's label.
-      ///   - action          string or unicode - any built-in function to perform.
-      /// @param replaceItems        [opt] bool - Deprecated!
-      ///
-      ///
-      /// List of functions - http://kodi.wiki/view/List_of_Built_In_Functions
+      ///   - action          string or unicode - any available \link page_List_of_built_in_functions built-in function \endlink .
       ///
       /// @note You can use the above as keywords for arguments and skip certain optional arguments.\n
       /// Once you use a keyword, all following arguments require the keyword.
       ///
       ///
       ///-----------------------------------------------------------------------
+      /// @python_v17 Completely removed previously available argument **replaceItems**.
       ///
       /// **Example:**
       /// ~~~~~~~~~~~~~{.py}
       /// ...
-      /// listitem.addContextMenuItems([('Theater Showtimes', 'RunScript(special://home/scripts/showtimes/default.py,Iron Man)',)])
+      /// listitem.addContextMenuItems([('Theater Showtimes', 'RunScript(special://home/scripts/showtimes/default.py,Iron Man)')])
       /// ...
       /// ~~~~~~~~~~~~~
       ///
@@ -565,14 +921,39 @@ namespace XBMCAddon
       /// **Example:**
       /// ~~~~~~~~~~~~~{.py}
       /// ...
-      /// self.list.getSelectedItem().setProperty('AspectRatio', '1.85 : 1')
-      /// self.list.getSelectedItem().setProperty('StartOffset', '256.4')
+      /// listitem.setProperty('AspectRatio', '1.85 : 1')
+      /// listitem.setProperty('StartOffset', '256.4')
       /// ...
       /// ~~~~~~~~~~~~~
       ///
       setProperty(...);
 #else
       void setProperty(const char * key, const String& value);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ setProperties(values) }
+      ///-----------------------------------------------------------------------
+      /// Sets multiple properties for listitem's
+      ///
+      /// @param values             dictionary - pairs of `{ label: value }`.
+      ///
+      /// @python_v18 New function added.
+      ///
+      ///-----------------------------------------------------------------------
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// # setProperties(values)
+      /// listitem.setProperties({ 'AspectRatio': '1.85', 'StartOffset' : '256.4' })
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      setProperties(...);
+#else
+      void setProperties(const Properties& dictionary);
 #endif
 
 #ifdef DOXYGEN_SHOULD_USE_THIS
@@ -594,7 +975,7 @@ namespace XBMCAddon
       /// **Example:**
       /// ~~~~~~~~~~~~~{.py}
       /// ...
-      /// AspectRatio = self.list.getSelectedItem().getProperty('AspectRatio')
+      /// AspectRatio = listitem.getProperty('AspectRatio')
       /// ...
       /// ~~~~~~~~~~~~~
       ///
@@ -620,7 +1001,7 @@ namespace XBMCAddon
       /// **Example:**
       /// ~~~~~~~~~~~~~{.py}
       /// ...
-      /// self.list.getSelectedItem().setPath(path='ActivateWindow(Weather)')
+      /// listitem.setPath(path='/path/to/some/file.ext')
       /// ...
       /// ~~~~~~~~~~~~~
       ///
@@ -657,6 +1038,10 @@ namespace XBMCAddon
       ///
       /// @param enable  bool to enable content lookup
       ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v16 New function added.
+      ///
       setContentLookup(...);
 #else
       void setContentLookup(bool enable);
@@ -680,6 +1065,8 @@ namespace XBMCAddon
       /// listitem.setSubtitles(['special://temp/example.srt', 'http://example.com/example.srt'])
       /// ...
       /// ~~~~~~~~~~~~~
+      ///-----------------------------------------------------------------------
+      /// @python_v14 New function added.
       ///
       setSubtitles(...);
 #else
@@ -691,9 +1078,8 @@ namespace XBMCAddon
       /// \ingroup python_xbmcgui_listitem
       /// @brief \python_func{ getdescription() }
       ///-----------------------------------------------------------------------
-      /// Returns the description of this PlayListItem.
+      /// @python_v17 Deprecated.
       ///
-      /// @return Description string of play list item
       ///
       getdescription();
 #else
@@ -705,9 +1091,8 @@ namespace XBMCAddon
       /// \ingroup python_xbmcgui_listitem
       /// @brief \python_func{ getduration() }
       ///-----------------------------------------------------------------------
-      /// Returns the duration of this PlayListItem
+      /// @python_v17 Deprecated. Use **InfoTagMusic**.
       ///
-      /// @return duration as string
       ///
       getduration();
 #else
@@ -719,13 +1104,31 @@ namespace XBMCAddon
       /// \ingroup python_xbmcgui_listitem
       /// @brief \python_func{ getfilename() }
       ///-----------------------------------------------------------------------
-      /// Returns the filename of this PlayListItem.
+      /// @python_v17 Deprecated.
       ///
-      /// @return [string] filename
       ///
       getfilename();
 #else
       String getfilename();
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ getPath() }
+      ///-----------------------------------------------------------------------
+      /// Returns the path of this listitem.
+      ///
+      /// @return [string] filename
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v17 New function added.
+      ///
+      ///
+      getPath();
+#else
+      String getPath();
 #endif
 
 #ifdef DOXYGEN_SHOULD_USE_THIS
@@ -736,6 +1139,10 @@ namespace XBMCAddon
       /// Returns the VideoInfoTag for this item.
       ///
       /// @return     video info tag
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v15 New function added.
       ///
       getVideoInfoTag();
 #else
@@ -751,10 +1158,20 @@ namespace XBMCAddon
       ///
       /// @return     music info tag
       ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v15 New function added.
+      ///
       getMusicInfoTag();
 #else
       xbmc::InfoTagMusic* getMusicInfoTag();
 #endif
+
+private:
+      std::vector<std::string> getStringArray(const InfoLabelValue& alt, const std::string& tag, std::string value = "");
+
+      CVideoInfoTag* GetVideoInfoTag();
+      const CVideoInfoTag* GetVideoInfoTag() const;
     };
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS

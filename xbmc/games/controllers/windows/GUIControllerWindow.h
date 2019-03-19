@@ -1,44 +1,36 @@
 /*
- *      Copyright (C) 2014-2016 Team Kodi
- *      http://kodi.tv
+ *  Copyright (C) 2014-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this Program; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
+
 #pragma once
 
+#include "addons/RepositoryUpdater.h"
+#include "games/GameTypes.h"
 #include "guilib/GUIDialog.h"
-#include "utils/Observer.h"
 
+#include <memory>
+
+namespace KODI
+{
 namespace GAME
 {
+  class CControllerInstaller;
   class IControllerList;
   class IFeatureList;
 
-  class CGUIControllerWindow : public CGUIDialog,
-                               public Observer
+  class CGUIControllerWindow : public CGUIDialog
   {
   public:
     CGUIControllerWindow(void);
     virtual ~CGUIControllerWindow(void);
 
     // implementation of CGUIControl via CGUIDialog
+    virtual void DoProcess(unsigned int currentTime, CDirtyRegionList &dirtyregions) override;
     virtual bool OnMessage(CGUIMessage& message) override;
-
-    // implementation of Observer
-    void Notify(const Observable &obs, const ObservableMessage msg) override;
 
   protected:
     // implementation of CGUIWindow via CGUIDialog
@@ -50,15 +42,24 @@ namespace GAME
     void OnControllerSelected(unsigned int controllerIndex);
     void OnFeatureFocused(unsigned int featureIndex);
     void OnFeatureSelected(unsigned int featureIndex);
-
+    void OnEvent(const ADDON::CRepositoryUpdater::RepositoryUpdated& event);
     void UpdateButtons(void);
 
     // Action for the available button
     void GetMoreControllers(void);
+    void GetAllControllers();
     void ResetController(void);
     void ShowHelp(void);
+    void ShowButtonCaptureDialog(void);
 
-    IControllerList* m_controllerList;
-    IFeatureList*    m_featureList;
+    IControllerList* m_controllerList = nullptr;
+    IFeatureList* m_featureList = nullptr;
+
+    // Game paremeters
+    GameClientPtr m_gameClient;
+
+    // Controller parameters
+    std::unique_ptr<CControllerInstaller> m_installer;
   };
+}
 }

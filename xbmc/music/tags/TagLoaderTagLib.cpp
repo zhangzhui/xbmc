@@ -1,21 +1,9 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "TagLoaderTagLib.h"
@@ -23,10 +11,8 @@
 #include <vector>
 
 #include <taglib/id3v1tag.h>
-#include <taglib/id3v2tag.h>
 #include <taglib/apetag.h>
 #include <taglib/asftag.h>
-#include <taglib/xiphcomment.h>
 #include <taglib/id3v1genres.h>
 #include <taglib/aifffile.h>
 #include <taglib/apefile.h>
@@ -36,6 +22,7 @@
 #include <taglib/mpegfile.h>
 #include <taglib/oggfile.h>
 #include <taglib/oggflacfile.h>
+#include <taglib/opusfile.h>
 #include <taglib/rifffile.h>
 #include <taglib/speexfile.h>
 #include <taglib/s3mfile.h>
@@ -68,8 +55,13 @@
 #include "utils/URIUtils.h"
 #include "utils/log.h"
 #include "utils/StringUtils.h"
-#include "utils/Base64.h"
+#include "ServiceBroker.h"
 #include "settings/AdvancedSettings.h"
+#include "settings/SettingsComponent.h"
+
+#if TAGLIB_MAJOR_VERSION <= 1 && TAGLIB_MINOR_VERSION < 11
+#include "utils/Base64.h"
+#endif
 
 using namespace TagLib;
 using namespace MUSIC_INFO;
@@ -112,20 +104,20 @@ void SetFlacArt(FLAC::File *flacFile, EmbeddedArt *art, CMusicInfoTag &tag)
     else // anything else is taken as second priority
       cover[1] = picture;
   }
-  for (unsigned int i = 0; i < 2; i++)
+  for (const FLAC::Picture* const c : cover)
   {
-    if (cover[i])
+    if (c)
     {
-      tag.SetCoverArtInfo(cover[i]->data().size(), cover[i]->mimeType().to8Bit(true));
+      tag.SetCoverArtInfo(c->data().size(), c->mimeType().to8Bit(true));
       if (art)
-        art->set(reinterpret_cast<const uint8_t*>(cover[i]->data().data()), cover[i]->data().size(), cover[i]->mimeType().to8Bit(true));
+        art->Set(reinterpret_cast<const uint8_t*>(c->data().data()), c->data().size(), c->mimeType().to8Bit(true));
       return; // one is enough
     }
   }
 }
 }
 
-bool CTagLoaderTagLib::Load(const std::string& strFileName, MUSIC_INFO::CMusicInfoTag& tag, MUSIC_INFO::EmbeddedArt *art /* = NULL */)
+bool CTagLoaderTagLib::Load(const std::string& strFileName, MUSIC_INFO::CMusicInfoTag& tag, EmbeddedArt *art /* = NULL */)
 {
   return Load(strFileName, tag, "", art);
 }
@@ -144,8 +136,14 @@ bool CTagLoaderTagLib::ParseTag(ASF::Tag *asf, EmbeddedArt *art, CMusicInfoTag& 
   {
     if (it->first == "Author")
       SetArtist(tag, GetASFStringList(it->second));
+    else if (it->first == "WM/ArtistSortOrder")
+      SetArtistSort(tag, GetASFStringList(it->second));
     else if (it->first == "WM/AlbumArtist")
       SetAlbumArtist(tag, GetASFStringList(it->second));
+    else if (it->first == "WM/AlbumArtistSortOrder")
+      SetAlbumArtistSort(tag, GetASFStringList(it->second));
+    else if (it->first == "WM/ComposerSortOrder")
+      SetComposerSort(tag, GetASFStringList(it->second));
     else if (it->first == "WM/AlbumTitle")
       tag.SetAlbum(it->second.front().toString().to8Bit(true));
     else if (it->first == "WM/TrackNumber" ||
@@ -180,19 +178,17 @@ bool CTagLoaderTagLib::ParseTag(ASF::Tag *asf, EmbeddedArt *art, CMusicInfoTag& 
     else if (it->first == "WM/Mixer")
       AddArtistRole(tag, "mixer", GetASFStringList(it->second));
     else if (it->first == "WM/Publisher")
-    {} // Known unsupported, supress warnings
-    else if (it->first == "WM/AlbumArtistSortOrder")
-    {} // Known unsupported, supress warnings
-    else if (it->first == "WM/ArtistSortOrder")
-    {} // Known unsupported, supress warnings
+      tag.SetRecordLabel(it->second.front().toString().to8Bit(true));
     else if (it->first == "WM/Script")
-    {} // Known unsupported, supress warnings
+    {} // Known unsupported, suppress warnings
     else if (it->first == "WM/Year")
       tag.SetYear(atoi(it->second.front().toString().toCString(true)));
     else if (it->first == "MusicBrainz/Artist Id")
       tag.SetMusicBrainzArtistID(SplitMBID(GetASFStringList(it->second)));
     else if (it->first == "MusicBrainz/Album Id")
       tag.SetMusicBrainzAlbumID(it->second.front().toString().to8Bit(true));
+    else if (it->first == "MusicBrainz/Release Group Id")
+      tag.SetMusicBrainzReleaseGroupID(it->second.front().toString().to8Bit(true));
     else if (it->first == "MusicBrainz/Album Artist")
       SetAlbumArtist(tag, GetASFStringList(it->second));
     else if (it->first == "MusicBrainz/Album Artist Id")
@@ -202,7 +198,7 @@ bool CTagLoaderTagLib::ParseTag(ASF::Tag *asf, EmbeddedArt *art, CMusicInfoTag& 
     else if (it->first == "MusicBrainz/Album Status")
     {}
     else if (it->first == "MusicBrainz/Album Type")
-    {}
+      SetReleaseType(tag, GetASFStringList(it->second));
     else if (it->first == "MusicIP/PUID")
     {}
     else if (it->first == "replaygain_track_gain")
@@ -218,9 +214,9 @@ bool CTagLoaderTagLib::ParseTag(ASF::Tag *asf, EmbeddedArt *art, CMusicInfoTag& 
       ASF::Picture pic = it->second.front().toPicture();
       tag.SetCoverArtInfo(pic.picture().size(), pic.mimeType().toCString());
       if (art)
-        art->set(reinterpret_cast<const uint8_t *>(pic.picture().data()), pic.picture().size(), pic.mimeType().toCString());
+        art->Set(reinterpret_cast<const uint8_t *>(pic.picture().data()), pic.picture().size(), pic.mimeType().toCString());
     }
-    else if (g_advancedSettings.m_logLevel == LOG_LEVEL_MAX)
+    else if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_logLevel == LOG_LEVEL_MAX)
       CLog::Log(LOGDEBUG, "unrecognized ASF tag name: %s", it->first.toCString(true));
   }
   // artist may be specified in the ContentDescription block rather than using the 'Author' attribute.
@@ -237,26 +233,26 @@ bool CTagLoaderTagLib::ParseTag(ASF::Tag *asf, EmbeddedArt *art, CMusicInfoTag& 
 int CTagLoaderTagLib::POPMtoXBMC(int popm)
 {
   // Ratings:
-  // FROM: http://thiagoarrais.com/repos/banshee/src/Core/Banshee.Core/Banshee.Streaming/StreamRatingTagger.cs
+  // FROM: http://www.mediamonkey.com/forum/viewtopic.php?f=7&t=40532&start=30#p391067
   // The following schemes are used by the other POPM-compatible players:
   // WMP/Vista: "Windows Media Player 9 Series" ratings:
   //   1 = 1, 2 = 64, 3=128, 4=196 (not 192), 5=255
-  // MediaMonkey: "no@email" ratings:
-  //   0.5=26, 1=51, 1.5=76, 2=102, 2.5=128,
-  //   3=153, 3.5=178, 4=204, 4.5=230, 5=255
-  // Quod Libet: "quodlibet@lists.sacredchao.net" ratings
-  //   (but that email can be changed):
-  //   arbitrary scale from 0-255
+  // MediaMonkey (v4.2.1): "no@email" ratings:
+  //   0.5=13, 1=1, 1.5=54, 2=64, 2.5=118,
+  //   3=128, 3.5=186, 4=196, 4.5=242, 5=255
+  //   Note 1 star written as 1 while half a star is 13, a higher value
+  // Accommodate these mapped values in a scale from 0-255
   if (popm == 0) return 0;
-  if (popm < 0x19) return 1;
-  if (popm < 0x32) return 2;
-  if (popm < 0x4b) return 3;
-  if (popm < 0x64) return 4;
-  if (popm < 0x7d) return 5;
-  if (popm < 0x96) return 6;
-  if (popm < 0xaf) return 7;
-  if (popm < 0xc8) return 8;
-  if (popm < 0xe1) return 9;
+  if (popm == 1) return 2;
+  if (popm < 23) return 1;
+  if (popm < 32) return 2;
+  if (popm < 64) return 3;
+  if (popm < 96) return 4;
+  if (popm < 128) return 5;
+  if (popm < 160) return 6;
+  if (popm < 196) return 7;
+  if (popm < 224) return 8;
+  if (popm < 255) return 9;
   else return 10;
 }
 
@@ -268,14 +264,14 @@ bool CTagLoaderTagLib::ParseTag(ID3v1::Tag *id3v1, EmbeddedArt *art, CMusicInfoT
   tag.SetArtist(id3v1->artist().to8Bit(true));
   tag.SetAlbum(id3v1->album().to8Bit(true));
   tag.SetComment(id3v1->comment().to8Bit(true));
-  tag.SetGenre(id3v1->genre().to8Bit(true));
+  tag.SetGenre(id3v1->genre().to8Bit(true), true);
   tag.SetYear(id3v1->year());
   tag.SetTrackNumber(id3v1->track());
   return true;
 }
 
 template<>
-bool CTagLoaderTagLib::ParseTag(ID3v2::Tag *id3v2, MUSIC_INFO::EmbeddedArt *art, MUSIC_INFO::CMusicInfoTag& tag)
+bool CTagLoaderTagLib::ParseTag(ID3v2::Tag *id3v2, EmbeddedArt *art, MUSIC_INFO::CMusicInfoTag& tag)
 {
   if (!id3v2) return false;
   ReplayGain replayGainInfo;
@@ -289,8 +285,11 @@ bool CTagLoaderTagLib::ParseTag(ID3v2::Tag *id3v2, MUSIC_INFO::EmbeddedArt *art,
     if (it->second.isEmpty()) continue;
 
     if      (it->first == "TPE1")   SetArtist(tag, GetID3v2StringList(it->second));
+    else if (it->first == "TSOP")   SetArtistSort(tag, GetID3v2StringList(it->second));
     else if (it->first == "TALB")   tag.SetAlbum(it->second.front()->toString().to8Bit(true));
     else if (it->first == "TPE2")   SetAlbumArtist(tag, GetID3v2StringList(it->second));
+    else if (it->first == "TSO2")   SetAlbumArtistSort(tag, GetID3v2StringList(it->second));
+    else if (it->first == "TSOC")   SetComposerSort(tag, GetID3v2StringList(it->second));
     else if (it->first == "TIT2")   tag.SetTitle(it->second.front()->toString().to8Bit(true));
     else if (it->first == "TCON")   SetGenre(tag, GetID3v2StringList(it->second));
     else if (it->first == "TRCK")   tag.SetTrackNumber(strtol(it->second.front()->toString().toCString(true), nullptr, 10));
@@ -302,7 +301,7 @@ bool CTagLoaderTagLib::ParseTag(ID3v2::Tag *id3v2, MUSIC_INFO::EmbeddedArt *art,
     else if (it->first == "TPE3")   AddArtistRole(tag, "Conductor", GetID3v2StringList(it->second));
     else if (it->first == "TEXT")   AddArtistRole(tag, "Lyricist", GetID3v2StringList(it->second));
     else if (it->first == "TPE4")   AddArtistRole(tag, "Remixer", GetID3v2StringList(it->second));
-    else if (it->first == "TPUB")   {} // Publisher. Known unsupported, supress warnings
+    else if (it->first == "TPUB")   tag.SetRecordLabel(it->second.front()->toString().to8Bit(true));
     else if (it->first == "TCOP")   {} // Copyright message
     else if (it->first == "TDRC")   tag.SetYear(strtol(it->second.front()->toString().toCString(true), nullptr, 10));
     else if (it->first == "TDRL")   tag.SetYear(strtol(it->second.front()->toString().toCString(true), nullptr, 10));
@@ -341,10 +340,14 @@ bool CTagLoaderTagLib::ParseTag(ID3v2::Tag *id3v2, MUSIC_INFO::EmbeddedArt *art,
           tag.SetMusicBrainzArtistID(SplitMBID(StringListToVectorString(stringList)));
         else if (desc == "MUSICBRAINZ ALBUM ID")
           tag.SetMusicBrainzAlbumID(stringList.front().to8Bit(true));
+        else if (desc == "MUSICBRAINZ RELEASE GROUP ID")
+          tag.SetMusicBrainzReleaseGroupID(stringList.front().to8Bit(true));
         else if (desc == "MUSICBRAINZ ALBUM ARTIST ID")
           tag.SetMusicBrainzAlbumArtistID(SplitMBID(StringListToVectorString(stringList)));
         else if (desc == "MUSICBRAINZ ALBUM ARTIST")
           SetAlbumArtist(tag, StringListToVectorString(stringList));
+        else if (desc == "MUSICBRAINZ ALBUM TYPE")
+          SetReleaseType(tag, StringListToVectorString(stringList));
         else if (desc == "REPLAYGAIN_TRACK_GAIN")
           replayGainInfo.ParseGain(ReplayGain::TRACK, stringList.front().toCString(true));
         else if (desc == "REPLAYGAIN_ALBUM_GAIN")
@@ -355,17 +358,23 @@ bool CTagLoaderTagLib::ParseTag(ID3v2::Tag *id3v2, MUSIC_INFO::EmbeddedArt *art,
           replayGainInfo.ParsePeak(ReplayGain::ALBUM, stringList.front().toCString(true));
         else if (desc == "ALBUMARTIST" || desc == "ALBUM ARTIST")
           SetAlbumArtist(tag, StringListToVectorString(stringList));
+        else if (desc == "ALBUMARTISTSORT" || desc == "ALBUM ARTIST SORT")
+          SetAlbumArtistSort(tag, StringListToVectorString(stringList));
         else if (desc == "ARTISTS")
           SetArtistHints(tag, StringListToVectorString(stringList));
         else if (desc == "ALBUMARTISTS" || desc == "ALBUM ARTISTS")
           SetAlbumArtistHints(tag, StringListToVectorString(stringList));
+        else if (desc == "WRITER")  // How Picard >1.3 tags writer in ID3
+          AddArtistRole(tag, "Writer", StringListToVectorString(stringList));
+        else if (desc == "COMPOSERSORT" || desc == "COMPOSER SORT")
+          SetComposerSort(tag, StringListToVectorString(stringList));
         else if (desc == "MOOD")
           tag.SetMood(stringList.front().to8Bit(true));
-        else if (g_advancedSettings.m_logLevel == LOG_LEVEL_MAX)
+        else if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_logLevel == LOG_LEVEL_MAX)
           CLog::Log(LOGDEBUG, "unrecognized user text tag detected: TXXX:%s", frame->description().toCString(true));
       }
     else if (it->first == "TIPL")
-      // Loop through and process the involved people list 
+      // Loop through and process the involved people list
       // For example Arranger, Engineer, Producer, DJMixer or Mixer
       // In fieldlist every odd field is a function, and every even is an artist or a comma delimited list of artists.
       for (ID3v2::FrameList::ConstIterator ip = it->second.begin(); ip != it->second.end(); ++ip)
@@ -375,7 +384,7 @@ bool CTagLoaderTagLib::ParseTag(ID3v2::Tag *id3v2, MUSIC_INFO::EmbeddedArt *art,
           AddArtistRole(tag, StringListToVectorString(tiplframe->fieldList()));
       }
     else if (it->first == "TMCL")
-      // Loop through and process the musicain credits list
+      // Loop through and process the musician credits list
       // It is a mapping between the instrument and the person that played it, but also includes "orchestra" or "soloist".
       // In fieldlist every odd field is an instrument, and every even is an artist or a comma delimited list of artists.
       for (ID3v2::FrameList::ConstIterator ip = it->second.begin(); ip != it->second.end(); ++ip)
@@ -388,8 +397,8 @@ bool CTagLoaderTagLib::ParseTag(ID3v2::Tag *id3v2, MUSIC_INFO::EmbeddedArt *art,
       // Loop through any UFID frames and set them
       for (ID3v2::FrameList::ConstIterator ut = it->second.begin(); ut != it->second.end(); ++ut)
       {
-        auto ufid = reinterpret_cast<ID3v2::UniqueFileIdentifierFrame*> (*ut);
-        if (ufid->owner() == "http://musicbrainz.org")
+        auto ufid = dynamic_cast<ID3v2::UniqueFileIdentifierFrame*> (*ut);
+        if (ufid && ufid->owner() == "http://musicbrainz.org")
         {
           // MusicBrainz pads with a \0, but the spec requires binary, be cautious
           char cUfid[64];
@@ -419,7 +428,7 @@ bool CTagLoaderTagLib::ParseTag(ID3v2::Tag *id3v2, MUSIC_INFO::EmbeddedArt *art,
 
         // @xbmc.org ratings trump others (of course)
         if      (popFrame->email() == "ratings@xbmc.org")
-          tag.SetUserrating(popFrame->rating() / 51); //TODO wtf? Why 51 find some explanation, somewhere...
+          tag.SetUserrating(popFrame->rating() / 51); //! @todo wtf? Why 51 find some explanation, somewhere...
         else if (tag.GetUserrating() == 0)
         {
           if (popFrame->email() != "Windows Media Player 9 Series" &&
@@ -431,19 +440,19 @@ bool CTagLoaderTagLib::ParseTag(ID3v2::Tag *id3v2, MUSIC_INFO::EmbeddedArt *art,
           tag.SetUserrating(POPMtoXBMC(popFrame->rating()));
         }
       }
-    else if (g_advancedSettings.m_logLevel == LOG_LEVEL_MAX)
+    else if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_logLevel == LOG_LEVEL_MAX)
       CLog::Log(LOGDEBUG, "unrecognized ID3 frame detected: %c%c%c%c", it->first[0], it->first[1], it->first[2], it->first[3]);
   } // for
 
   // Process the extracted picture frames; 0 = CoverArt, 1 = Other, 2 = First Found picture
-  for (int i = 0; i < 3; ++i)
-    if (pictures[i])
+  for (const ID3v2::AttachedPictureFrame* const picture : pictures)
+    if (picture)
     {
-      std::string  mime =            pictures[i]->mimeType().to8Bit(true);
-      TagLib::uint size =            pictures[i]->picture().size();
+      std::string  mime =            picture->mimeType().to8Bit(true);
+      TagLib::uint size =            picture->picture().size();
       tag.SetCoverArtInfo(size, mime);
       if (art)
-        art->set(reinterpret_cast<const uint8_t*>(pictures[i]->picture().data()), size, mime);
+        art->Set(reinterpret_cast<const uint8_t*>(picture->picture().data()), size, mime);
 
       // Stop after we find the first picture for now.
       break;
@@ -469,12 +478,18 @@ bool CTagLoaderTagLib::ParseTag(APE::Tag *ape, EmbeddedArt *art, CMusicInfoTag& 
   {
     if (it->first == "ARTIST")
       SetArtist(tag, StringListToVectorString(it->second.toStringList()));
+    else if (it->first == "ARTISTSORT")
+      SetArtistSort(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "ARTISTS")
       SetArtistHints(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "ALBUMARTIST" || it->first == "ALBUM ARTIST")
       SetAlbumArtist(tag, StringListToVectorString(it->second.toStringList()));
+    else if (it->first == "ALBUMARTISTSORT")
+      SetAlbumArtistSort(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "ALBUMARTISTS" || it->first == "ALBUM ARTISTS")
       SetAlbumArtistHints(tag, StringListToVectorString(it->second.toStringList()));
+    else if (it->first == "COMPOSERSORT")
+      SetComposerSort(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "ALBUM")
       tag.SetAlbum(it->second.toString().to8Bit(true));
     else if (it->first == "TITLE")
@@ -499,27 +514,31 @@ bool CTagLoaderTagLib::ParseTag(APE::Tag *ape, EmbeddedArt *art, CMusicInfoTag& 
       AddArtistRole(tag, "Composer", StringListToVectorString(it->second.toStringList()));
     else if (it->first == "CONDUCTOR")
       AddArtistRole(tag, "Conductor", StringListToVectorString(it->second.toStringList()));
-    else if ((it->first == "BAND") || (it->first == "ENSEMBLE"))
-      AddArtistRole(tag, "Orchestra", StringListToVectorString(it->second.toStringList()));
+    else if (it->first == "BAND")
+      AddArtistRole(tag, "Band", StringListToVectorString(it->second.toStringList()));
+    else if (it->first == "ENSEMBLE")
+      AddArtistRole(tag, "Ensemble", StringListToVectorString(it->second.toStringList()));
     else if (it->first == "LYRICIST")
       AddArtistRole(tag, "Lyricist", StringListToVectorString(it->second.toStringList()));
-    else if (it->first == "MIXARTIST")   
+    else if (it->first == "WRITER")
+      AddArtistRole(tag, "Writer", StringListToVectorString(it->second.toStringList()));
+    else if ((it->first == "MIXARTIST") || (it->first == "REMIXER"))
       AddArtistRole(tag, "Remixer", StringListToVectorString(it->second.toStringList()));
-    else if (it->first == "ARRANGER") 
+    else if (it->first == "ARRANGER")
       AddArtistRole(tag, "Arranger", StringListToVectorString(it->second.toStringList()));
-    else if (it->first == "ENGINEER") 
+    else if (it->first == "ENGINEER")
       AddArtistRole(tag, "Engineer", StringListToVectorString(it->second.toStringList()));
-    else if (it->first == "PRODUCER") 
+    else if (it->first == "PRODUCER")
       AddArtistRole(tag, "Producer", StringListToVectorString(it->second.toStringList()));
-    else if (it->first == "DJMIXER") 
+    else if (it->first == "DJMIXER")
       AddArtistRole(tag, "DJMixer", StringListToVectorString(it->second.toStringList()));
     else if (it->first == "MIXER")
       AddArtistRole(tag, "Mixer", StringListToVectorString(it->second.toStringList()));
     else if (it->first == "PERFORMER")
       // Picard uses PERFORMER tag as musician credits list formatted "name (instrument)"
       AddArtistInstrument(tag, StringListToVectorString(it->second.toStringList()));
-    else if (it->first == "LABEL")   
-    {} // Publisher. Known unsupported, supress warnings
+    else if (it->first == "LABEL")
+      tag.SetRecordLabel(it->second.toString().to8Bit(true));
     else if (it->first == "COMPILATION")
       tag.SetCompilation(it->second.toString().toInt() == 1);
     else if (it->first == "LYRICS")
@@ -540,9 +559,13 @@ bool CTagLoaderTagLib::ParseTag(APE::Tag *ape, EmbeddedArt *art, CMusicInfoTag& 
       SetAlbumArtist(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "MUSICBRAINZ_ALBUMID")
       tag.SetMusicBrainzAlbumID(it->second.toString().to8Bit(true));
+    else if (it->first == "MUSICBRAINZ_RELEASEGROUPID")
+      tag.SetMusicBrainzReleaseGroupID(it->second.toString().to8Bit(true));
     else if (it->first == "MUSICBRAINZ_TRACKID")
       tag.SetMusicBrainzTrackID(it->second.toString().to8Bit(true));
-    else if (g_advancedSettings.m_logLevel == LOG_LEVEL_MAX)
+    else if (it->first == "MUSICBRAINZ_ALBUMTYPE")
+      SetReleaseType(tag, StringListToVectorString(it->second.toStringList()));
+    else if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_logLevel == LOG_LEVEL_MAX)
       CLog::Log(LOGDEBUG, "unrecognized APE tag: %s", it->first.toCString(true));
   }
 
@@ -556,7 +579,9 @@ bool CTagLoaderTagLib::ParseTag(Ogg::XiphComment *xiph, EmbeddedArt *art, CMusic
   if (!xiph)
     return false;
 
+#if TAGLIB_MAJOR_VERSION <= 1 && TAGLIB_MINOR_VERSION < 11
   FLAC::Picture pictures[3];
+#endif
   ReplayGain replayGainInfo;
 
   const Ogg::FieldListMap& fieldListMap = xiph->fieldListMap();
@@ -564,12 +589,18 @@ bool CTagLoaderTagLib::ParseTag(Ogg::XiphComment *xiph, EmbeddedArt *art, CMusic
   {
     if (it->first == "ARTIST")
       SetArtist(tag, StringListToVectorString(it->second));
+    else if (it->first == "ARTISTSORT")
+      SetArtistSort(tag, StringListToVectorString(it->second));
     else if (it->first == "ARTISTS")
       SetArtistHints(tag, StringListToVectorString(it->second));
     else if (it->first == "ALBUMARTIST" || it->first == "ALBUM ARTIST")
       SetAlbumArtist(tag, StringListToVectorString(it->second));
+    else if (it->first == "ALBUMARTISTSORT" || it->first == "ALBUM ARTIST SORT")
+      SetAlbumArtistSort(tag, StringListToVectorString(it->second));
     else if (it->first == "ALBUMARTISTS" || it->first == "ALBUM ARTISTS")
       SetAlbumArtistHints(tag, StringListToVectorString(it->second));
+    else if (it->first == "COMPOSERSORT")
+      SetComposerSort(tag, StringListToVectorString(it->second));
     else if (it->first == "ALBUM")
       tag.SetAlbum(it->second.front().to8Bit(true));
     else if (it->first == "TITLE")
@@ -591,16 +622,20 @@ bool CTagLoaderTagLib::ParseTag(Ogg::XiphComment *xiph, EmbeddedArt *art, CMusic
     else if (it->first == "CUESHEET")
       tag.SetCueSheet(it->second.front().to8Bit(true));
     else if (it->first == "ENCODEDBY")
-    {} // Known but unsupported, supress warnings
+    {} // Known but unsupported, suppress warnings
     else if (it->first == "COMPOSER")
       AddArtistRole(tag, "Composer", StringListToVectorString(it->second));
     else if (it->first == "CONDUCTOR")
       AddArtistRole(tag, "Conductor", StringListToVectorString(it->second));
-    else if ((it->first == "BAND") || (it->first == "ENSEMBLE"))
-      AddArtistRole(tag, "Orchestra", StringListToVectorString(it->second));
+    else if (it->first == "BAND")
+      AddArtistRole(tag, "Band", StringListToVectorString(it->second));
+    else if (it->first == "ENSEMBLE")
+      AddArtistRole(tag, "Ensemble", StringListToVectorString(it->second));
     else if (it->first == "LYRICIST")
       AddArtistRole(tag, "Lyricist", StringListToVectorString(it->second));
-    else if (it->first == "MIXARTIST")
+    else if (it->first == "WRITER")
+      AddArtistRole(tag, "Writer", StringListToVectorString(it->second));
+    else if ((it->first == "MIXARTIST") || (it->first == "REMIXER"))
       AddArtistRole(tag, "Remixer", StringListToVectorString(it->second));
     else if (it->first == "ARRANGER")
       AddArtistRole(tag, "Arranger", StringListToVectorString(it->second));
@@ -616,7 +651,7 @@ bool CTagLoaderTagLib::ParseTag(Ogg::XiphComment *xiph, EmbeddedArt *art, CMusic
       // Picard uses PERFORMER tag as musician credits list formatted "name (instrument)"
       AddArtistInstrument(tag, StringListToVectorString(it->second));
     else if (it->first == "LABEL")
-    {} // Publisher. Known unsupported, supress warnings
+      tag.SetRecordLabel(it->second.front().to8Bit(true));
     else if (it->first == "COMPILATION")
       tag.SetCompilation(it->second.front().toInt() == 1);
     else if (it->first == "LYRICS")
@@ -637,8 +672,12 @@ bool CTagLoaderTagLib::ParseTag(Ogg::XiphComment *xiph, EmbeddedArt *art, CMusic
       SetAlbumArtist(tag, StringListToVectorString(it->second));
     else if (it->first == "MUSICBRAINZ_ALBUMID")
       tag.SetMusicBrainzAlbumID(it->second.front().to8Bit(true));
+    else if (it->first == "MUSICBRAINZ_RELEASEGROUPID")
+      tag.SetMusicBrainzReleaseGroupID(it->second.front().to8Bit(true));
     else if (it->first == "MUSICBRAINZ_TRACKID")
       tag.SetMusicBrainzTrackID(it->second.front().to8Bit(true));
+    else if (it->first == "RELEASETYPE")
+      SetReleaseType(tag, StringListToVectorString(it->second));
     else if (it->first == "RATING")
     {
       // Vorbis ratings are a mess because the standard forgot to mention anything about them.
@@ -650,6 +689,7 @@ bool CTagLoaderTagLib::ParseTag(Ogg::XiphComment *xiph, EmbeddedArt *art, CMusic
       if (iUserrating > 0 && iUserrating <= 100)
         tag.SetUserrating((iUserrating / 10));
     }
+#if TAGLIB_MAJOR_VERSION <= 1 && TAGLIB_MINOR_VERSION < 11
     else if (it->first == "METADATA_BLOCK_PICTURE")
     {
       const char* b64 = it->second.front().toCString();
@@ -676,10 +716,12 @@ bool CTagLoaderTagLib::ParseTag(Ogg::XiphComment *xiph, EmbeddedArt *art, CMusic
     {
       pictures[2].setMimeType(it->second.front());
     }
-    else if (g_advancedSettings.m_logLevel == LOG_LEVEL_MAX)
+#endif
+    else if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_logLevel == LOG_LEVEL_MAX)
       CLog::Log(LOGDEBUG, "unrecognized XipComment name: %s", it->first.toCString(true));
   }
 
+#if TAGLIB_MAJOR_VERSION <= 1 && TAGLIB_MINOR_VERSION < 11
   // Process the extracted picture frames; 0 = CoverArt, 1 = Other, 2 = COVERART/COVERARTMIME
   for (int i = 0; i < 3; ++i)
     if (pictures[i].data().size())
@@ -690,10 +732,33 @@ bool CTagLoaderTagLib::ParseTag(Ogg::XiphComment *xiph, EmbeddedArt *art, CMusic
       TagLib::uint size =            pictures[i].data().size();
       tag.SetCoverArtInfo(size, mime);
       if (art)
-        art->set(reinterpret_cast<const uint8_t*>(pictures[i].data().data()), size, mime);
+        art->Set(reinterpret_cast<const uint8_t*>(pictures[i].data().data()), size, mime);
 
       break;
     }
+#else
+  auto pictureList = xiph->pictureList();
+  FLAC::Picture *cover[2] = {};
+
+  for (auto i: pictureList)
+  {
+    FLAC::Picture *picture = i;
+    if (picture->type() == FLAC::Picture::FrontCover)
+      cover[0] = picture;
+    else // anything else is taken as second priority
+      cover[1] = picture;
+  }
+  for (const FLAC::Picture* const c : cover)
+  {
+    if (c)
+    {
+      tag.SetCoverArtInfo(c->data().size(), c->mimeType().to8Bit(true));
+      if (art)
+        art->Set(reinterpret_cast<const uint8_t*>(c->data().data()), c->data().size(), c->mimeType().to8Bit(true));
+      break; // one is enough
+    }
+  }
+#endif
 
   if (xiph->comment() != String::null)
     tag.SetComment(xiph->comment().toCString(true));
@@ -716,14 +781,20 @@ bool CTagLoaderTagLib::ParseTag(MP4::Tag *mp4, EmbeddedArt *art, CMusicInfoTag& 
       tag.SetTitle(it->second.toStringList().front().to8Bit(true));
     else if (it->first == "\251ART")
       SetArtist(tag, StringListToVectorString(it->second.toStringList()));
+    else if (it->first == "soar")
+      SetArtistSort(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "----:com.apple.iTunes:ARTISTS")
       SetArtistHints(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "\251alb")
       tag.SetAlbum(it->second.toStringList().front().to8Bit(true));
     else if (it->first == "aART")
       SetAlbumArtist(tag, StringListToVectorString(it->second.toStringList()));
+    else if (it->first == "soaa")
+      SetAlbumArtistSort(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "----:com.apple.iTunes:ALBUMARTISTS")
       SetAlbumArtistHints(tag, StringListToVectorString(it->second.toStringList()));
+    else if (it->first == "soco")
+      SetComposerSort(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "\251gen")
       SetGenre(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "----:com.apple.iTunes:MOOD")
@@ -749,7 +820,7 @@ bool CTagLoaderTagLib::ParseTag(MP4::Tag *mp4, EmbeddedArt *art, CMusicInfoTag& 
       AddArtistRole(tag, "Mixer", StringListToVectorString(it->second.toStringList()));
     //No MP4 standard tag for musician credits
     else if (it->first == "----:com.apple.iTunes:LABEL")
-    {} // Publisher. Known unsupported, supress warnings
+      tag.SetRecordLabel(it->second.toStringList().front().to8Bit(true));
     else if (it->first == "cpil")
       tag.SetCompilation(it->second.toBool());
     else if (it->first == "trkn")
@@ -774,8 +845,12 @@ bool CTagLoaderTagLib::ParseTag(MP4::Tag *mp4, EmbeddedArt *art, CMusicInfoTag& 
       SetAlbumArtist(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "----:com.apple.iTunes:MusicBrainz Album Id")
       tag.SetMusicBrainzAlbumID(it->second.toStringList().front().to8Bit(true));
+    else if (it->first == "----:com.apple.iTunes:MusicBrainz Release Group Id")
+      tag.SetMusicBrainzReleaseGroupID(it->second.toStringList().front().to8Bit(true));
     else if (it->first == "----:com.apple.iTunes:MusicBrainz Track Id")
       tag.SetMusicBrainzTrackID(it->second.toStringList().front().to8Bit(true));
+    else if (it->first == "----:com.apple.iTunes:MusicBrainz Album Type")
+      SetReleaseType(tag, StringListToVectorString(it->second.toStringList()));
     else if (it->first == "covr")
     {
       MP4::CoverArtList coverArtList = it->second.toCoverArtList();
@@ -797,7 +872,7 @@ bool CTagLoaderTagLib::ParseTag(MP4::Tag *mp4, EmbeddedArt *art, CMusicInfoTag& 
           continue;
         tag.SetCoverArtInfo(pt->data().size(), mime);
         if (art)
-          art->set(reinterpret_cast<const uint8_t *>(pt->data().data()), pt->data().size(), mime);
+          art->Set(reinterpret_cast<const uint8_t *>(pt->data().data()), pt->data().size(), mime);
         break; // one is enough
       }
     }
@@ -811,12 +886,12 @@ bool CTagLoaderTagLib::ParseTag(MP4::Tag *mp4, EmbeddedArt *art, CMusicInfoTag& 
 }
 
 template<>
-bool CTagLoaderTagLib::ParseTag(Tag *generic, EmbeddedArt *art, CMusicInfoTag& tag)
+bool CTagLoaderTagLib::ParseTag(Tag *genericTag, EmbeddedArt *art, CMusicInfoTag& tag)
 {
-  if (!generic)
+  if (!genericTag)
     return false;
 
-  PropertyMap properties = generic->properties();
+  PropertyMap properties = genericTag->properties();
   for (PropertyMap::ConstIterator it = properties.begin(); it != properties.end(); ++it)
   {
     if (it->first == "ARTIST")
@@ -848,13 +923,22 @@ void CTagLoaderTagLib::SetArtist(CMusicInfoTag &tag, const std::vector<std::stri
   else
     // Fill both artist vector and artist desc from tag value.
     // Note desc may not be empty as it could have been set by previous parsing of ID3v2 before APE
-    tag.SetArtist(values, true); 
+    tag.SetArtist(values, true);
+}
+
+void CTagLoaderTagLib::SetArtistSort(CMusicInfoTag &tag, const std::vector<std::string> &values)
+{
+  // ARTISTSORT/TSOP tag is often a single string, when not take union of values
+  if (values.size() == 1)
+    tag.SetArtistSort(values[0]);
+  else
+    tag.SetArtistSort(StringUtils::Join(values, CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_musicItemSeparator));
 }
 
 void CTagLoaderTagLib::SetArtistHints(CMusicInfoTag &tag, const std::vector<std::string> &values)
 {
   if (values.size() == 1)
-    tag.SetMusicBrainzArtistHints(StringUtils::Split(values[0], g_advancedSettings.m_musicItemSeparator));
+    tag.SetMusicBrainzArtistHints(StringUtils::Split(values[0], CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_musicItemSeparator));
   else
     tag.SetMusicBrainzArtistHints(values);
 }
@@ -889,12 +973,30 @@ void CTagLoaderTagLib::SetAlbumArtist(CMusicInfoTag &tag, const std::vector<std:
     tag.SetAlbumArtist(values, true);
 }
 
+void CTagLoaderTagLib::SetAlbumArtistSort(CMusicInfoTag &tag, const std::vector<std::string> &values)
+{
+  // ALBUMARTISTSORT/TSOP tag is often a single string, when not take union of values
+  if (values.size() == 1)
+    tag.SetAlbumArtistSort(values[0]);
+  else
+    tag.SetAlbumArtistSort(StringUtils::Join(values, CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_musicItemSeparator));
+}
+
 void CTagLoaderTagLib::SetAlbumArtistHints(CMusicInfoTag &tag, const std::vector<std::string> &values)
 {
   if (values.size() == 1)
-    tag.SetMusicBrainzAlbumArtistHints(StringUtils::Split(values[0], g_advancedSettings.m_musicItemSeparator));
+    tag.SetMusicBrainzAlbumArtistHints(StringUtils::Split(values[0], CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_musicItemSeparator));
   else
     tag.SetMusicBrainzAlbumArtistHints(values);
+}
+
+void CTagLoaderTagLib::SetComposerSort(CMusicInfoTag &tag, const std::vector<std::string> &values)
+{
+  // COMPOSRSORT/TSOC tag is often a single string, when not take union of values
+  if (values.size() == 1)
+    tag.SetComposerSort(values[0]);
+  else
+    tag.SetComposerSort(StringUtils::Join(values, CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_musicItemSeparator));
 }
 
 void CTagLoaderTagLib::SetGenre(CMusicInfoTag &tag, const std::vector<std::string> &values)
@@ -916,9 +1018,17 @@ void CTagLoaderTagLib::SetGenre(CMusicInfoTag &tag, const std::vector<std::strin
     genres.push_back(genre);
   }
   if (genres.size() == 1)
-    tag.SetGenre(genres[0]);
+    tag.SetGenre(genres[0], true);
   else
-    tag.SetGenre(genres);
+    tag.SetGenre(genres, true);
+}
+
+void CTagLoaderTagLib::SetReleaseType(CMusicInfoTag &tag, const std::vector<std::string> &values)
+{
+  if (values.size() == 1)
+    tag.SetMusicBrainzReleaseType(values[0]);
+  else
+    tag.SetMusicBrainzReleaseType(StringUtils::Join(values, CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_musicItemSeparator));
 }
 
 void CTagLoaderTagLib::AddArtistRole(CMusicInfoTag &tag, const std::string& strRole, const std::vector<std::string> &values)
@@ -935,40 +1045,72 @@ void CTagLoaderTagLib::AddArtistRole(CMusicInfoTag &tag, const std::vector<std::
   // Every odd entry is a function (e.g. Producer, Arranger etc.) or instrument (e.g. Orchestra, Vocal, Piano)
   // and every even is an artist or a comma delimited list of artists.
 
-  if (values.size() % 2 != 0) // Must contain an even number of entries 
+  if (values.size() % 2 != 0) // Must contain an even number of entries
     return;
 
+  // Vector of possible separators
+  const std::vector<std::string> separators{ ";", "/", ",", "&", " and " };
+
   for (size_t i = 0; i + 1 < values.size(); i += 2)
-    tag.AddArtistRole(values[i], StringUtils::Split(values[i + 1], ","));
+  {
+    std::vector<std::string> roles;
+    //Split into individual roles
+    roles = StringUtils::Split(values[i], separators);
+    for (auto role : roles)
+    {
+      StringUtils::Trim(role);
+      StringUtils::ToCapitalize(role);
+      tag.AddArtistRole(role, StringUtils::Split(values[i + 1], ","));
+    }
+  }
 }
 
 void CTagLoaderTagLib::AddArtistInstrument(CMusicInfoTag &tag, const std::vector<std::string> &values)
 {
-  // Values is a musician credits list, each entry is artist name followed by instrument (or function)
-  // e.g. violin, drums, background vocals, solo, orchestra etc. in brackets. This is how Picard uses PERFORMER tag.
-  // If there is not a pair of brackets then role is "performer" by default, and the whole entry is 
-  // taken as artist name.
-  
+  /* Values is a musician credits list, each entry is artist name followed by instrument (or function)
+     e.g. violin, drums, background vocals, solo, orchestra etc. in brackets. This is how Picard uses
+     the PERFORMER tag. Multiple instruments may be in one tag
+     e.g "Pierre Marchand (bass, drum machine and hammond organ)",
+     these will be separated into individual roles.
+     If there is not a pair of brackets then role is "performer" by default, and the whole entry is
+     taken as artist name.
+  */
+  // Vector of possible separators
+  const std::vector<std::string> separators{";", "/", ",", "&", " and "};
+
   for (size_t i = 0; i < values.size(); ++i)
   {
-    std::string strRole = "Performer";
+    std::vector<std::string> roles;
     std::string strArtist = values[i];
     size_t firstLim = values[i].find_first_of("(");
     size_t lastLim = values[i].find_last_of(")");
     if (lastLim != std::string::npos && firstLim != std::string::npos && firstLim < lastLim - 1)
     {
       //Pair of brackets with something between them
-      strRole = values[i].substr(firstLim + 1, lastLim - firstLim - 1);
-      StringUtils::Trim(strRole);
       strArtist.erase(firstLim, lastLim - firstLim + 1);
+      std::string strRole = values[i].substr(firstLim + 1, lastLim - firstLim - 1);
+      //Split into individual roles
+      roles = StringUtils::Split(strRole, separators);
     }
     StringUtils::Trim(strArtist);
-    tag.AddArtistRole(strRole, strArtist);
+    if (roles.empty())
+      tag.AddArtistRole("Performer", strArtist);
+    else
+      for (auto role : roles)
+      {
+        StringUtils::Trim(role);
+        StringUtils::ToCapitalize(role);
+        tag.AddArtistRole(role, strArtist);
+      }
   }
 }
 
-bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag, const std::string& fallbackFileExtension, MUSIC_INFO::EmbeddedArt *art /* = NULL */)
+bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag, const std::string& fallbackFileExtension, EmbeddedArt *art /* = NULL */)
 {
+  // Dont try to read the tags for streams & shoutcast
+  if (URIUtils::IsInternetStream(strFileName))
+    return false;
+
   std::string strExtension = URIUtils::GetExtension(strFileName);
   StringUtils::TrimLeft(strExtension, ".");
 
@@ -996,6 +1138,7 @@ bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag, 
   TagLib::MPEG::File*        mpegFile = nullptr;
   TagLib::Ogg::Vorbis::File* oggVorbisFile = nullptr;
   TagLib::Ogg::FLAC::File*   oggFlacFile = nullptr;
+  TagLib::Ogg::Opus::File*   oggOpusFile = nullptr;
   TagLib::TrueAudio::File*   ttaFile = nullptr;
   TagLib::WavPack::File*     wvFile = nullptr;
   TagLib::RIFF::WAV::File *  wavFile = nullptr;
@@ -1013,7 +1156,7 @@ bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag, 
       file = new IT::File(stream);
     else if (strExtension == "mod" || strExtension == "module" || strExtension == "nst" || strExtension == "wow")
       file = new Mod::File(stream);
-    else if (strExtension == "mp4" || strExtension == "m4a" ||
+    else if (strExtension == "mp4" || strExtension == "m4a" || strExtension == "m4v" ||
              strExtension == "m4r" || strExtension == "m4b" ||
              strExtension == "m4p" || strExtension == "3g2")
       file = mp4File = new MP4::File(stream);
@@ -1035,6 +1178,8 @@ bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag, 
       file = new XM::File(stream);
     else if (strExtension == "ogg")
       file = oggVorbisFile = new Ogg::Vorbis::File(stream);
+    else if (strExtension == "opus")
+      file = oggOpusFile = new Ogg::Opus::File(stream);
     else if (strExtension == "oga") // Leave this madness until last - oga container can have Vorbis or FLAC
     {
       file = oggFlacFile = new Ogg::FLAC::File(stream);
@@ -1065,7 +1210,7 @@ bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag, 
   ID3v1::Tag *id3v1 = nullptr;
   ID3v2::Tag *id3v2 = nullptr;
   Ogg::XiphComment *xiph = nullptr;
-  Tag *generic = nullptr;
+  Tag *genericTag = nullptr;
 
   if (apeFile)
     ape = apeFile->APETag(false);
@@ -1085,25 +1230,23 @@ bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag, 
     ape = mpegFile->APETag(false);
   }
   else if (oggFlacFile)
-    xiph = dynamic_cast<Ogg::XiphComment *>(oggFlacFile->tag());
+    xiph = oggFlacFile->tag();
   else if (oggVorbisFile)
-    xiph = dynamic_cast<Ogg::XiphComment *>(oggVorbisFile->tag());
+    xiph = oggVorbisFile->tag();
+  else if (oggOpusFile)
+    xiph = oggOpusFile->tag();
   else if (ttaFile)
     id3v2 = ttaFile->ID3v2Tag(false);
   else if (aiffFile)
     id3v2 = aiffFile->tag();
   else if (wavFile)
-#if TAGLIB_MAJOR_VERSION > 1 || TAGLIB_MINOR_VERSION > 8
     id3v2 = wavFile->ID3v2Tag();
-#else
-    id3v2 = wavFile->tag();
-#endif
   else if (wvFile)
     ape = wvFile->APETag(false);
   else if (mpcFile)
     ape = mpcFile->APETag(false);
   else    // This is a catch all to get generic information for other files types (s3m, xm, it, mod, etc)
-    generic = file->tag();
+    genericTag = file->tag();
 
   if (file->audioProperties())
     tag.SetDuration(file->audioProperties()->length());
@@ -1114,13 +1257,13 @@ bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag, 
     ParseTag(id3v1, art, tag);
   if (id3v2)
     ParseTag(id3v2, art, tag);
-  if (generic)
-    ParseTag(generic, art, tag);
+  if (genericTag)
+    ParseTag(genericTag, art, tag);
   if (mp4)
     ParseTag(mp4, art, tag);
   if (xiph) // xiph tags override id3v2 tags in badly tagged FLACs
     ParseTag(xiph, art, tag);
-  if (ape && (!id3v2 || g_advancedSettings.m_prioritiseAPEv2tags)) // ape tags override id3v2 if we're prioritising them
+  if (ape && (!id3v2 || CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_prioritiseAPEv2tags)) // ape tags override id3v2 if we're prioritising them
     ParseTag(ape, art, tag);
 
   // art for flac files is outside the tag

@@ -1,8 +1,7 @@
 set(SOURCES Profile.cpp
-            ProfilesManager.cpp)
+            ProfileManager.cpp)
 
 set(HEADERS Profile.h
-            ProfilesManager.h)
+            ProfileManager.h)
 
 core_add_library(profiles)
-add_dependencies(profiles libcpluff)

@@ -1,21 +1,9 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "DVDSubtitleTagSami.h"
@@ -180,7 +168,7 @@ void CDVDSubtitleTagSami::ConvertLine(CDVDOverlayText* pOverlay, const char* lin
       pos = del_start;
       m_flag[FLAG_LANGUAGE] = false;
     }
-    else if (fullTag == "<br>" && !strUTF8.empty())
+    else if (StringUtils::StartsWith(fullTag, "<br") && !strUTF8.empty())
     {
       strUTF8.insert(pos, "\n");
       pos += 1;
@@ -222,23 +210,26 @@ void CDVDSubtitleTagSami::CloseTag(CDVDOverlayText* pOverlay)
 
 void CDVDSubtitleTagSami::LoadHead(CDVDSubtitleStream* samiStream)
 {
-  char line[1024];
+  char cLine[1024];
   bool inSTYLE = false;
   CRegExp reg(true);
   if (!reg.RegComp("\\.([a-z]+)[ \t]*\\{[ \t]*name:([^;]*?);[ \t]*lang:([^;]*?);[ \t]*SAMIType:([^;]*?);[ \t]*\\}"))
     return;
 
-  while (samiStream->ReadLine(line, sizeof(line)))
+  while (samiStream->ReadLine(cLine, sizeof(cLine)))
   {
-    if (!strnicmp(line, "<BODY>", 6))
+    std::string line = cLine;
+    StringUtils::Trim(line);
+
+   if (StringUtils::EqualsNoCase(line, "<BODY>"))
       break;
     if (inSTYLE)
     {
-      if (!strnicmp(line, "</STYLE>", 8))
+      if (StringUtils::EqualsNoCase(line, "</STYLE>"))
         break;
       else
       {
-        if (reg.RegFind(line) > -1)
+        if (reg.RegFind(line.c_str()) > -1)
         {
           SLangclass lc;
           lc.ID = reg.GetMatch(1);
@@ -254,9 +245,8 @@ void CDVDSubtitleTagSami::LoadHead(CDVDSubtitleStream* samiStream)
     }
     else
     {
-      if (!strnicmp(line, "<STYLE TYPE=\"text/css\">", 23))
+      if (StringUtils::EqualsNoCase(line, "<STYLE TYPE=\"text/css\">"))
         inSTYLE = true;
     }
   }
 }
-

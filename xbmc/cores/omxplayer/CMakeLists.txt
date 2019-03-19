@@ -7,18 +7,12 @@ set(SOURCES OMXAudio.cpp
             OMXVideo.cpp)
 
 set(HEADERS OMXAudio.h
-            OMXAudioCodec.h
             OMXAudioCodecOMX.h
             OMXHelper.h
             OMXImage.h
             OMXPlayerAudio.h
             OMXPlayerVideo.h
-            OMXVideo.h
-            OMXVideoCodec.h)
+            OMXVideo.h)
 
 core_add_library(omxplayer)
-add_definitions(-D__STDC_FORMAT_MACROS)
-
-add_dependencies(omxplayer linuxsupport ffmpeg)
-
-
+target_compile_definitions(${CORE_LIBRARY} PRIVATE -D__STDC_FORMAT_MACROS)

@@ -1,34 +1,17 @@
-#pragma once
-
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
-#include "system.h"
+#pragma once
+
 #include "cores/AudioEngine/Utils/AEAudioFormat.h"
-#include "cores/AudioEngine/Utils/AEUtil.h"
-#include "DVDClock.h"
+#include "cores/VideoPlayer/Process/ProcessInfo.h"
+#include "cores/VideoPlayer/Interface/Addon/DemuxPacket.h"
 
-
-#if (defined HAVE_CONFIG_H) && (!defined TARGET_WINDOWS)
-  #include "config.h"
-#endif
 #include <vector>
 
 extern "C" {
@@ -48,24 +31,26 @@ typedef struct stDVDAudioFrame
   bool hasTimestamp;
   double duration;
   unsigned int nb_frames;
+  unsigned int framesOut;
   unsigned int framesize;
   unsigned int planes;
 
   AEAudioFormat format;
   int bits_per_sample;
   bool passthrough;
-  AEAudioFormat audioFormat;
   enum AVAudioServiceType audio_service_type;
   enum AVMatrixEncoding matrix_encoding;
-  int               profile;
+  int profile;
+  bool hasDownmix;
+  double centerMixLevel;
 } DVDAudioFrame;
 
 class CDVDAudioCodec
 {
 public:
 
-  CDVDAudioCodec() {}
-  virtual ~CDVDAudioCodec() {}
+  explicit CDVDAudioCodec(CProcessInfo &processInfo) : m_processInfo(processInfo) {}
+  virtual ~CDVDAudioCodec() = default;
 
   /*
    * Open the decoder, returns true on success
@@ -78,19 +63,13 @@ public:
   virtual void Dispose() = 0;
 
   /*
-   * returns bytes used or -1 on error
+   * returns false on error
    *
    */
-  virtual int Decode(uint8_t* pData, int iSize, double dts, double pts) = 0;
+  virtual bool AddData(const DemuxPacket &packet) = 0;
 
   /*
-   * returns nr of bytes in decode buffer
-   * the data is valid until the next Decode call
-   */
-  virtual int GetData(uint8_t** dst) = 0;
-
-  /*
-   * the data is valid until the next Decode call
+   * the data is valid until the next call
    */
   virtual void GetData(DVDAudioFrame &frame) = 0;
 
@@ -110,14 +89,14 @@ public:
   virtual int GetBitRate() { return 0; }
 
   /*
-   * returns if the codec requests to use passtrough
+   * returns if the codec requests to use passthrough
    */
   virtual bool NeedPassthrough() { return false; }
 
   /*
    * should return codecs name
    */
-  virtual const char* GetName() = 0;
+  virtual std::string GetName() = 0;
 
   /*
    * should return amount of data decoded has buffered in preparation for next audio frame
@@ -138,4 +117,7 @@ public:
    * should return the ffmpeg profile value
    */
   virtual int GetProfile() { return 0; }
+
+protected:
+  CProcessInfo &m_processInfo;
 };

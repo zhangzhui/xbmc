@@ -1,9 +1,11 @@
-set(SOURCES GUIConfigurationWizard.cpp
+set(SOURCES ControllerInstaller.cpp
+            GUIConfigurationWizard.cpp
             GUIControllerList.cpp
             GUIControllerWindow.cpp
             GUIFeatureList.cpp)
 
-set(HEADERS GUIConfigurationWizard.h
+set(HEADERS ControllerInstaller.h
+            GUIConfigurationWizard.h
             GUIControllerDefines.h
             GUIControllerList.h
             GUIControllerWindow.h
@@ -11,4 +13,3 @@ set(HEADERS GUIConfigurationWizard.h
             IConfigurationWindow.h)
 
 core_add_library(games_controller_windows)
-add_dependencies(games_controller_windows libcpluff)

@@ -4,11 +4,11 @@ set(SOURCES DPMSSupport.cpp
 
 set(HEADERS DPMSSupport.h
             IPowerSyscall.h
-            PowerManager.h)
+            PowerManager.h
+            PowerTypes.h)
+
+if(CORE_SYSTEM_NAME MATCHES windows)
+  list(APPEND HEADERS WinIdleTimer.h)
+endif()
 
 core_add_library(powermanagement)
-add_dependencies(powermanagement libcpluff)
-
-if(ENABLE_INTERNAL_FFMPEG)
-  add_dependencies(powermanagement ffmpeg)
-endif()

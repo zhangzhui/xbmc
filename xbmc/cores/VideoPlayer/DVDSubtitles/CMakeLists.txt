@@ -23,11 +23,6 @@ set(HEADERS DVDFactorySubtitle.h
             DVDSubtitleStream.h
             DVDSubtitleTagMicroDVD.h
             DVDSubtitleTagSami.h
-            DVDSubtitlesLibass.h
-            DllLibass.h)
+            DVDSubtitlesLibass.h)
 
 core_add_library(dvdsubtitles)
-
-if(ENABLE_INTERNAL_FFMPEG)
-  add_dependencies(dvdsubtitles ffmpeg)
-endif()

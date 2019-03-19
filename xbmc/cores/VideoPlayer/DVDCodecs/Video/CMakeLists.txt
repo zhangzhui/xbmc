@@ -1,7 +1,9 @@
-set(SOURCES DVDVideoCodec.cpp
+set(SOURCES AddonVideoCodec.cpp
+            DVDVideoCodec.cpp
             DVDVideoCodecFFmpeg.cpp)
 
-set(HEADERS DVDVideoCodec.h
+set(HEADERS AddonVideoCodec.h
+            DVDVideoCodec.h
             DVDVideoCodecFFmpeg.h)
 
 if(NOT ENABLE_EXTERNAL_LIBAV)
@@ -16,16 +18,7 @@ if(AML_FOUND)
                       DVDVideoCodecAmlogic.h)
 endif()
 
-if(OPENMAX_FOUND)
-  list(APPEND SOURCES DVDVideoCodecOpenMax.cpp
-                      OpenMax.cpp
-                      OpenMaxVideo.cpp)
-  list(APPEND HEADERS DVDVideoCodecOpenMax.h
-                      OpenMax.h
-                      OpenMaxVideo.h)
-endif()
-
-if(CORE_SYSTEM_NAME STREQUAL windows)
+if(CORE_SYSTEM_NAME STREQUAL windows OR CORE_SYSTEM_NAME STREQUAL windowsstore)
   list(APPEND SOURCES DXVA.cpp)
   list(APPEND HEADERS DXVA.h)
 endif()
@@ -40,10 +33,9 @@ if(VAAPI_FOUND)
   list(APPEND HEADERS VAAPI.h)
 endif()
 
-if(CORE_SYSTEM_NAME STREQUAL darwin OR CORE_SYSTEM_NAME STREQUAL ios)
+if(APPLE)
   list(APPEND SOURCES VTB.cpp)
-  list(APPEND HEADERS DllVideoToolBox.h
-                      VTB.h)
+  list(APPEND HEADERS VTB.h)
 endif()
 
 if(MMAL_FOUND)
@@ -53,18 +45,14 @@ if(MMAL_FOUND)
   list(APPEND HEADERS MMALFFmpeg.h)
 endif()
 
-if(IMX_FOUND)
-  list(APPEND SOURCES DVDVideoCodecIMX.cpp)
-  list(APPEND HEADERS DVDVideoCodecIMX.h)
-endif()
-
 if(CORE_SYSTEM_NAME STREQUAL android)
   list(APPEND SOURCES DVDVideoCodecAndroidMediaCodec.cpp)
   list(APPEND HEADERS DVDVideoCodecAndroidMediaCodec.h)
 endif()
 
-core_add_library(dvdvideocodecs)
-
-if(ENABLE_INTERNAL_FFMPEG)
-  add_dependencies(dvdvideocodecs ffmpeg)
+if(CORE_PLATFORM_NAME_LC STREQUAL gbm)
+  list(APPEND SOURCES DVDVideoCodecDRMPRIME.cpp)
+  list(APPEND HEADERS DVDVideoCodecDRMPRIME.h)
 endif()
+
+core_add_library(dvdvideocodecs)

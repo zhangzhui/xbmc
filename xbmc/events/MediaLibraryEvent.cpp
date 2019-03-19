@@ -1,24 +1,14 @@
 /*
- *      Copyright (C) 2015 Team Kodi
- *      http://kodi.tv
+ *  Copyright (C) 2015-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "MediaLibraryEvent.h"
+#include "ServiceBroker.h"
+#include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
 #include "guilib/WindowIDs.h"
@@ -83,15 +73,12 @@ bool CMediaLibraryEvent::Execute() const
     }
     else
     {
-      // TODO: remove the filename for now as CGUIMediaWindow::GetDirectory() can't handle it
+      //! @todo remove the filename for now as CGUIMediaWindow::GetDirectory() can't handle it
       if (m_mediaType == MediaTypeMovie || m_mediaType == MediaTypeMusicVideo || m_mediaType == MediaTypeEpisode)
         path = URIUtils::GetDirectory(path);
     }
 
-    if (URIUtils::IsVideoDb(path))
-      windowId = WINDOW_VIDEO_NAV;
-    else
-      windowId = WINDOW_VIDEO_FILES;
+    windowId = WINDOW_VIDEO_NAV;
   }
   else if (m_mediaType == MediaTypeMusic || m_mediaType == MediaTypeArtist ||
            m_mediaType == MediaTypeAlbum || m_mediaType == MediaTypeSong)
@@ -109,15 +96,12 @@ bool CMediaLibraryEvent::Execute() const
     }
     else
     {
-      // TODO: remove the filename for now as CGUIMediaWindow::GetDirectory() can't handle it
+      //! @todo remove the filename for now as CGUIMediaWindow::GetDirectory() can't handle it
       if (m_mediaType == MediaTypeSong)
         path = URIUtils::GetDirectory(path);
     }
 
-    if (URIUtils::IsMusicDb(path))
-      windowId = WINDOW_MUSIC_NAV;
-    else
-      windowId = WINDOW_MUSIC_FILES;
+    windowId = WINDOW_MUSIC_NAV;
   }
 
   if (windowId < 0)
@@ -126,6 +110,6 @@ bool CMediaLibraryEvent::Execute() const
   std::vector<std::string> params;
   params.push_back(path);
   params.push_back("return");
-  g_windowManager.ActivateWindow(windowId, params);
+  CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(windowId, params);
   return true;
 }

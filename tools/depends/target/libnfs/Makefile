@@ -3,16 +3,14 @@ DEPS= ../../Makefile.include Makefile
 
 # lib name, version
 LIBNAME=libnfs
-VERSION=1.10.0
+VERSION=2.0.0
 SOURCE=$(LIBNAME)-$(VERSION)
 ARCHIVE=$(SOURCE).tar.gz
 
 # configuration settings
-CONFIGURE=CFLAGS="-DHAVE_NET_IF_H" ./configure --prefix=$(PREFIX)
+CONFIGURE=./configure --prefix=$(PREFIX) --disable-shared --disable-utils --disable-werror
 
 LIBDYLIB=$(PLATFORM)/lib/.libs/$(LIBNAME).a
-
-CLEAN_FILES=$(ARCHIVE) $(PLATFORM)
 
 all: .installed-$(PLATFORM)
 

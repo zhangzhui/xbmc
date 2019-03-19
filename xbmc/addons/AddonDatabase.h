@@ -1,23 +1,12 @@
-#pragma once
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
+
+#pragma once
 
 #include <string>
 #include <vector>
@@ -31,9 +20,10 @@ class CAddonDatabase : public CDatabase
 {
 public:
   CAddonDatabase();
-  virtual ~CAddonDatabase();
-  virtual bool Open();
+  ~CAddonDatabase() override;
+  bool Open() override;
 
+  /*! @deprecated: use CAddonMgr::FindInstallableById */
   bool GetAddon(const std::string& addonID, ADDON::AddonPtr& addon);
 
   /*! \brief Get an addon with a specific version and repository. */
@@ -42,14 +32,19 @@ public:
   /*! Get the addon IDs that has been set to disabled */
   bool GetDisabled(std::set<std::string>& addons);
 
+  /*! @deprecated: use FindByAddonId */
   bool GetAvailableVersions(const std::string& addonId,
       std::vector<std::pair<ADDON::AddonVersion, std::string>>& versionsInfo);
 
-  /*! Get the most recent version for an add-on and the repo id it belongs to*/
+  /*! @deprecated use CAddonMgr::FindInstallableById */
   std::pair<ADDON::AddonVersion, std::string> GetAddonVersion(const std::string &id);
 
-  bool UpdateRepositoryContent(const std::string& id, const ADDON::VECADDONS& addons,
-      const std::string& checksum, const ADDON::AddonVersion& version);
+  /*! Returns all addons in the repositories with id `addonId`. */
+  bool FindByAddonId(const std::string& addonId, ADDON::VECADDONS& addons);
+
+  bool UpdateRepositoryContent(const std::string& repositoryId, const ADDON::AddonVersion& version,
+      const std::string& checksum, const std::vector<ADDON::AddonPtr>& addons);
+
   int GetRepoChecksum(const std::string& id, std::string& checksum);
 
   /*!
@@ -62,7 +57,12 @@ public:
   /*! Get addons across all repositories */
   bool GetRepositoryContent(ADDON::VECADDONS& addons);
 
-  bool SetLastChecked(const std::string& id, const ADDON::AddonVersion& version, const std::string& timestamp);
+  /*!
+   \brief Set repo last checked date, and create the repo if needed
+   \param id id of the repository
+   \returns id of the repository, or -1 on error.
+   */
+  int SetLastChecked(const std::string& id, const ADDON::AddonVersion& version, const std::string& timestamp);
 
   /*!
    \brief Retrieve the time a repository was last checked and the version it was for
@@ -91,9 +91,8 @@ public:
 
   /*! \brief Check whether an addon has been marked as broken via BreakAddon.
    \param addonID id of the addon to check
-   \return reason if the addon is broken, blank otherwise
    \sa BreakAddon */
-  std::string IsAddonBroken(const std::string &addonID);
+  bool IsAddonBroken(const std::string &addonID);
 
   bool BlacklistAddon(const std::string& addonID);
   bool RemoveAddonFromBlacklist(const std::string& addonID);
@@ -136,45 +135,19 @@ public:
   void GetInstalled(std::vector<ADDON::CAddonBuilder>& addons);
 
   bool SetLastUpdated(const std::string& addonId, const CDateTime& dateTime);
+  bool SetOrigin(const std::string& addonId, const std::string& origin);
   bool SetLastUsed(const std::string& addonId, const CDateTime& dateTime);
 
 
 protected:
-  virtual void CreateTables();
-  virtual void CreateAnalytics();
-  virtual void UpdateTables(int version);
-  virtual int GetMinSchemaVersion() const;
-  virtual int GetSchemaVersion() const;
-  const char *GetBaseDBName() const { return "Addons"; }
+  void CreateTables() override;
+  void CreateAnalytics() override;
+  void UpdateTables(int version) override;
+  int GetMinSchemaVersion() const override;
+  int GetSchemaVersion() const override;
+  const char *GetBaseDBName() const override { return "Addons"; }
 
   bool GetAddon(int id, ADDON::AddonPtr& addon);
-  int AddAddon(const ADDON::AddonPtr& item, int idRepo);
   void DeleteRepository(const std::string& id);
-
-  /* keep in sync with the addon table */
-  enum AddonFields
-  {
-    addon_id=0,
-    addon_type,
-    addon_name,
-    addon_summary,
-    addon_description,
-    addon_stars,
-    addon_path,
-    addon_addonID,
-    addon_icon,
-    addon_version,
-    addon_changelog,
-    addon_fanart,
-    addon_author,
-    addon_disclaimer,
-    addon_minversion,
-    broken_reason,
-    addonextra_key,
-    addonextra_value,
-    dependencies_addon,
-    dependencies_version,
-    dependencies_optional
-  };
 };
 

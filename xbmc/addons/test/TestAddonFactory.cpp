@@ -1,21 +1,9 @@
 /*
- *      Copyright (C) 2016 Team Kodi
- *      http://kodi.tv
+ *  Copyright (C) 2016-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 #include "addons/AddonBuilder.h"
 #include "addons/AddonManager.h"
@@ -57,11 +45,11 @@ TEST_F(TestAddonFactory, ShouldFailWhenAddonDoesNotHaveRequestedType)
   EXPECT_EQ(nullptr, addon);
 }
 
-TEST_F(TestAddonFactory, ShouldPickFirstExtenstionWhenNotRequestingSpecificType)
+TEST_F(TestAddonFactory, ShouldPickFirstExtensionWhenNotRequestingSpecificType)
 {
   cp_extension_t extensions[2] = {
-      {&plugin, (char*)"xbmc.python.script", nullptr, nullptr, nullptr, nullptr},
-      {&plugin, (char*)"xbmc.python.service", nullptr, nullptr, nullptr, nullptr},
+      {&plugin, const_cast<char*>("xbmc.python.script"), nullptr, nullptr, nullptr, nullptr},
+      {&plugin, const_cast<char*>("xbmc.python.service"), nullptr, nullptr, nullptr, nullptr},
   };
   plugin.extensions = extensions;
   plugin.num_extensions = 2;
@@ -71,10 +59,10 @@ TEST_F(TestAddonFactory, ShouldPickFirstExtenstionWhenNotRequestingSpecificType)
   EXPECT_EQ(ADDON_SCRIPT, addon->Type());
 }
 
-TEST_F(TestAddonFactory, ShouldIgnoreMetadataExtenstion)
+TEST_F(TestAddonFactory, ShouldIgnoreMetadataExtension)
 {
   cp_extension_t extensions[2] = {
-      {&plugin, (char*)"kodi.addon.metadata", nullptr, nullptr, nullptr, nullptr},
+      {&plugin, const_cast<char*>("kodi.addon.metadata"), nullptr, nullptr, nullptr, nullptr},
       scriptExtension,
   };
   plugin.extensions = extensions;
@@ -88,37 +76,70 @@ TEST_F(TestAddonFactory, ShouldIgnoreMetadataExtenstion)
 
 TEST_F(TestAddonFactory, ShouldReturnDependencyInfoWhenNoExtensions)
 {
-  cp_plugin_import_t import{(char*)"a.b", (char*)"1.2.3", 0};
+  cp_plugin_import_t import{const_cast<char*>("a.b"), const_cast<char*>("1.2.3"), 0};
   plugin.extensions = nullptr;
   plugin.num_extensions = 0;
   plugin.num_imports = 1;
   plugin.imports = &import;
 
-  ADDONDEPS expected = {{"a.b", {AddonVersion{"1.2.3"}, false}}};
+  std::vector<DependencyInfo> expected = {{"a.b", AddonVersion{"1.2.3"}, false}};
   auto addon = CAddonMgr::Factory(&plugin, ADDON_UNKNOWN);
-  EXPECT_EQ(expected, addon->GetDeps());
+  EXPECT_EQ(expected, addon->GetDependencies());
 }
 
 
 TEST_F(TestAddonFactory, ShouldAcceptUnversionedDependencies)
 {
-  cp_plugin_import_t import{(char*)"a.b", nullptr, 0};
+  cp_plugin_import_t import{const_cast<char*>("a.b"), nullptr, 0};
   plugin.extensions = nullptr;
   plugin.num_extensions = 0;
   plugin.num_imports = 1;
   plugin.imports = &import;
 
-  ADDONDEPS expected = {{"a.b", {AddonVersion{"0.0.0"}, false}}};
+  std::vector<DependencyInfo> expected = {{"a.b", AddonVersion{"0.0.0"}, false}};
   auto addon = CAddonMgr::Factory(&plugin, ADDON_UNKNOWN);
-  EXPECT_EQ(expected, addon->GetDeps());
+  EXPECT_EQ(expected, addon->GetDependencies());
 }
 
 
 TEST_F(TestAddonFactory, IconPathShouldBeBuiltFromPluginPath)
 {
-  plugin.plugin_path = strdup("a/b");;
+  plugin.plugin_path = strdup("a/b");
   auto addon = CAddonMgr::Factory(&plugin, ADDON_UNKNOWN);
   EXPECT_EQ("a/b", addon->Path());
   EXPECT_EQ("a/b/icon.png", addon->Icon());
+  free(plugin.plugin_path);
+}
+
+
+TEST_F(TestAddonFactory, AssetsElementShouldOverrideImplicitArt)
+{
+  cp_cfg_element_t icon{0};
+  icon.name = const_cast<char*>("icon");
+  icon.value = const_cast<char*>("foo/bar.jpg");
+
+  cp_cfg_element_t assets{0};
+  assets.name = const_cast<char*>("assets");
+  assets.num_children = 1;
+  assets.children = &icon;
+
+  cp_cfg_element_t root{0};
+  root.name = const_cast<char*>("kodi.addon.metadata");
+  root.num_children = 1;
+  root.children = &assets;
+  assets.parent = &root;
+  icon.parent = &assets;
+
+  cp_extension_t metadata = {&plugin, const_cast<char*>("kodi.addon.metadata"), nullptr, nullptr, nullptr, &root};
+
+  cp_extension_t extensions[1] = {metadata};
+  plugin.extensions = extensions;
+  plugin.num_extensions = 1;
+  plugin.plugin_path = strdup("a/b");
+
+  auto addon = CAddonMgr::Factory(&plugin, ADDON_UNKNOWN);
+  EXPECT_EQ("a/b", addon->Path());
+  EXPECT_EQ("a/b/foo/bar.jpg", addon->Icon());
+  EXPECT_EQ("", addon->FanArt());
   free(plugin.plugin_path);
 }

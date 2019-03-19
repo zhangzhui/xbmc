@@ -1,21 +1,9 @@
 /*
- *      Copyright (C) 2012-2015 Team Kodi
- *      http://kodi.tv
+ *  Copyright (C) 2012-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Kodi; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "gtest/gtest.h"
@@ -61,11 +49,17 @@ TYPED_TEST(TestTagParser, ParsesBasicTag) {
   EXPECT_EQ(1985, tag.GetYear());
   EXPECT_EQ(2, tag.GetTrackNumber());
   EXPECT_EQ(1u, tag.GetArtist().size());
-  if (!tag.GetArtist().empty()) EXPECT_EQ("artist", tag.GetArtist().front());
+  if (!tag.GetArtist().empty())
+  {
+    EXPECT_EQ("artist", tag.GetArtist().front());
+  }
   EXPECT_EQ("album", tag.GetAlbum());
   EXPECT_EQ("comment", tag.GetComment());
   EXPECT_EQ(1u, tag.GetGenre().size());
-  if (!tag.GetGenre().empty()) EXPECT_EQ("Jazz", tag.GetGenre().front());
+  if (!tag.GetGenre().empty())
+  {
+    EXPECT_EQ("Jazz", tag.GetGenre().front());
+  }
   EXPECT_EQ("title", tag.GetTitle());
 }
 
@@ -142,15 +136,21 @@ TYPED_TEST(TestTagParser, FooProperties) {
   EXPECT_EQ(0, tag.GetYear());
   EXPECT_EQ(0, tag.GetTrackNumber());
   EXPECT_EQ(1u, tag.GetArtist().size());
-  if (!tag.GetArtist().empty()) EXPECT_EQ("foo", tag.GetArtist().front());
+  if (!tag.GetArtist().empty())
+  {
+    EXPECT_EQ("foo", tag.GetArtist().front());
+  }
   EXPECT_EQ("foo", tag.GetAlbum());
   EXPECT_EQ("foo", tag.GetComment());
-  if (!tag.GetGenre().empty()) EXPECT_EQ("foo", tag.GetGenre().front());
+  if (!tag.GetGenre().empty())
+  {
+    EXPECT_EQ("foo", tag.GetGenre().front());
+  }
   EXPECT_EQ("foo", tag.GetTitle());
 }
 
-class TestCTagLoaderTagLib : public ::testing::Test, public CTagLoaderTagLib {};
-TEST_F(TestCTagLoaderTagLib, SetGenre)
+class TestTagLoaderTagLib : public ::testing::Test, public CTagLoaderTagLib {};
+TEST_F(TestTagLoaderTagLib, SetGenre)
 {
   CMusicInfoTag tag, tag2;
   const char *genre_nr[] = {"0", "2", "4"};
@@ -171,7 +171,7 @@ TEST_F(TestCTagLoaderTagLib, SetGenre)
 
 }
 
-TEST(TestTagLoaderTagLib, SplitMBID)
+TEST_F(TestTagLoaderTagLib, SplitMBID)
 {
   CTagLoaderTagLib lib;
 

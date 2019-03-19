@@ -1,19 +1,19 @@
 set(SOURCES DDSImage.cpp
-            DirectXGraphics.cpp
             DirtyRegionSolvers.cpp
             DirtyRegionTracker.cpp
             FFmpegImage.cpp
-            GraphicContext.cpp
             GUIAction.cpp
             GUIAudioManager.cpp
             GUIBaseContainer.cpp
             GUIBorderedImage.cpp
             GUIButtonControl.cpp
             GUIColorManager.cpp
+            GUIComponent.cpp
             GUIControl.cpp
             GUIControlFactory.cpp
             GUIControlGroup.cpp
             GUIControlGroupList.cpp
+            GUIControlLookup.cpp
             GUIControlProfiler.cpp
             GUIDialog.cpp
             GUIEditControl.cpp
@@ -25,7 +25,6 @@ set(SOURCES DDSImage.cpp
             GUIFontTTF.cpp
             GUIImage.cpp
             GUIIncludes.cpp
-            GUIInfoTypes.cpp
             GUIKeyboardFactory.cpp
             GUILabelControl.cpp
             GUILabel.cpp
@@ -61,8 +60,6 @@ set(SOURCES DDSImage.cpp
             imagefactory.cpp
             IWindowManagerCallback.cpp
             LocalizeStrings.cpp
-            Resolution.cpp
-            Shader.cpp
             StereoscopicsManager.cpp
             TextureBundle.cpp
             TextureBundleXBT.cpp
@@ -73,27 +70,25 @@ set(SOURCES DDSImage.cpp
             XBTFReader.cpp)
 
 set(HEADERS DDSImage.h
-            DirectXGraphics.h
             DirtyRegion.h
             DirtyRegionSolvers.h
             DirtyRegionTracker.h
             DispResource.h
             FFmpegImage.h
-            Geometry.h
-            GraphicContext.h
             gui3d.h
             GUIAction.h
             GUIAudioManager.h
             GUIBaseContainer.h
             GUIBorderedImage.h
             GUIButtonControl.h
-            GUICallback.h
             GUIColorManager.h
+            GUIComponent.h
             GUIControl.h
             GUIControlFactory.h
             GUIControlGroup.h
             GUIControlGroupList.h
             GUIControlProfiler.h
+            GUIControlLookup.h
             GUIDialog.h
             GUIEditControl.h
             GUIFadeLabelControl.h
@@ -104,7 +99,6 @@ set(HEADERS DDSImage.h
             GUIFontTTF.h
             GUIImage.h
             GUIIncludes.h
-            GUIInfoTypes.h
             GUIKeyboard.h
             GUIKeyboardFactory.h
             GUILabel.h
@@ -148,14 +142,11 @@ set(HEADERS DDSImage.h
             ISliderCallback.h
             IWindowManagerCallback.h
             LocalizeStrings.h
-            Resolution.h
-            Shader.h
             StereoscopicsManager.h
             Texture.h
             TextureBundle.h
             TextureBundleXBT.h
             TextureManager.h
-            TransformMatrix.h
             Tween.h
             VisibleEffect.h
             WindowIDs.h
@@ -165,36 +156,39 @@ set(HEADERS DDSImage.h
 if(OPENGL_FOUND)
   list(APPEND SOURCES GUIFontTTFGL.cpp
                       GUITextureGL.cpp
-                      MatrixGLES.cpp
+                      Shader.cpp
                       TextureGL.cpp)
   list(APPEND HEADERS GUIFontTTFGL.h
                       GUITextureGL.h
-                      MatrixGLES.h
+                      Shader.h
                       TextureGL.h)
 endif()
 
 if(OPENGLES_FOUND)
   list(APPEND SOURCES GUIFontTTFGL.cpp
-                      GUIShader.cpp
                       GUITextureGLES.cpp
-                      MatrixGLES.cpp
-                      TextureGL.cpp
-                      TexturePi.cpp)
+                      Shader.cpp
+                      TextureGL.cpp)
   list(APPEND HEADERS GUIFontTTFGL.h
-                      GUIShader.h
                       GUITextureGLES.h
-                      MatrixGLES.h
-                      TextureGL.h
-                      TexturePi.h)
+                      Shader.h
+                      TextureGL.h)
 endif()
 
-if(CORE_SYSTEM_NAME STREQUAL windows)
+if(CORE_PLATFORM_NAME_LC STREQUAL rbpi)
+  list(APPEND SOURCES TexturePi.cpp)
+  list(APPEND HEADERS TexturePi.h)
+endif()
+
+if(CORE_SYSTEM_NAME STREQUAL windows OR CORE_SYSTEM_NAME STREQUAL windowsstore)
   list(APPEND SOURCES D3DResource.cpp
+                      DirectXGraphics.cpp
                       GUIFontTTFDX.cpp
                       GUIShaderDX.cpp
                       GUITextureD3D.cpp
                       TextureDX.cpp)
   list(APPEND HEADERS D3DResource.h
+                      DirectXGraphics.h
                       GUIFontTTFDX.h
                       GUIShaderDX.h
                       GUITextureD3D.h
@@ -202,13 +196,8 @@ if(CORE_SYSTEM_NAME STREQUAL windows)
 endif()
 
 core_add_library(guilib)
-add_dependencies(guilib libcpluff)
 
-if(ENABLE_INTERNAL_FFMPEG)
-  add_dependencies(guilib ffmpeg)
-endif()
-
-if(CORE_SYSTEM_NAME STREQUAL windows)
+if(CORE_SYSTEM_NAME STREQUAL windows OR CORE_SYSTEM_NAME STREQUAL windowsstore)
   set(SHADERS_VERTEX guishader_vert.hlsl)
   set(SHADERS_PIXEL guishader_checkerboard_right.hlsl
                     guishader_checkerboard_left.hlsl
@@ -218,20 +207,30 @@ if(CORE_SYSTEM_NAME STREQUAL windows)
                     guishader_interlaced_left.hlsl
                     guishader_multi_texture_blend.hlsl
                     guishader_texture.hlsl
-                    guishader_texture_noblend.hlsl
-                    guishader_video.hlsl
-                    guishader_video_control.hlsl)
+                    guishader_texture_noblend.hlsl)
   foreach(shader ${SHADERS_VERTEX})
-    add_shader_dx(guilib
-                  ${CORE_SOURCE_DIR}/system/shaders/${shader}
-                  vs_4_0_level_9_1
-                  VS)
+    get_filename_component(file ${shader} NAME_WE)
+    add_custom_command(OUTPUT ${file}.h
+                       COMMAND ${FXC} /Fh ${file}.h /E VS /T vs_4_0_level_9_1 /Vn ${file} /Qstrip_reflect
+                                      ${CMAKE_SOURCE_DIR}/system/shaders/${shader}
+                       DEPENDS ${CMAKE_SOURCE_DIR}/system/shaders/${shader}
+                       COMMENT "FX compile vertex shader ${shader}"
+                       VERBATIM)
+    list(APPEND SHADERS ${file}.h)
   endforeach()
   foreach(shader ${SHADERS_PIXEL})
-    add_shader_dx(guilib
-                  ${CORE_SOURCE_DIR}/system/shaders/${shader}
-                  ps_4_0_level_9_1
-                  PS)
+    get_filename_component(file ${shader} NAME_WE)
+    add_custom_command(OUTPUT ${file}.h
+                       COMMAND ${FXC} /Fh ${file}.h /E PS /T ps_4_0_level_9_1 /Vn ${file} /Qstrip_reflect
+                                      ${CMAKE_SOURCE_DIR}/system/shaders/${shader}
+                       DEPENDS ${CMAKE_SOURCE_DIR}/system/shaders/${shader}
+                       COMMENT "FX compile pixel shader ${shader}"
+                       VERBATIM)
+    list(APPEND SHADERS ${file}.h)
   endforeach()
-  add_dependencies(guilib d3dx11effects)
+
+  add_custom_target(generate_shaders ALL DEPENDS ${SHADERS})
+  set_target_properties(generate_shaders PROPERTIES FOLDER "Build Utilities")
+  target_include_directories(${CORE_LIBRARY} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+  add_dependencies(${CORE_LIBRARY} generate_shaders)
 endif()

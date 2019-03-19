@@ -31,7 +31,7 @@ unsigned char get_internal_from_G1 (unsigned char g1_char)
     return g1_char;
 }
 
-// TODO: Probably not right
+//! @todo Probably not right
 // G2: Extended Control Code Set 1
 unsigned char get_internal_from_G2 (unsigned char g2_char)
 {
@@ -46,7 +46,7 @@ unsigned char get_internal_from_G2 (unsigned char g2_char)
     return 0x20;
 }
 
-// TODO: Probably not right
+//! @todo Probably not right
 // G3: Future Characters and Icon Expansion
 unsigned char get_internal_from_G3 (unsigned char g3_char)
 {
@@ -138,14 +138,14 @@ void clear_packet(cc708_service_decoder *decoder)
 void cc708_service_reset(cc708_service_decoder *decoder)
 {
   // There's lots of other stuff that we need to do, such as canceling delays
-  for (int j=0;j<8;j++)
+  for (e708Window& window : decoder->windows)
   {
-    decoder->windows[j].is_defined=0;
-    decoder->windows[j].visible=0;
-    decoder->windows[j].memory_reserved=0;
-    decoder->windows[j].is_empty=1;
-    memset (decoder->windows[j].commands, 0,
-        sizeof (decoder->windows[j].commands));
+    window.is_defined=0;
+    window.visible=0;
+    window.memory_reserved=0;
+    window.is_empty=1;
+    memset (window.commands, 0,
+        sizeof (window.commands));
   }
   decoder->current_window=-1;
   clearTV(decoder);
@@ -165,17 +165,17 @@ void cc708_reset(cc708_service_decoder *decoders)
 
 int compWindowsPriorities (const void *a, const void *b)
 {
-  e708Window *w1=*(e708Window **)a;
-  e708Window *w2=*(e708Window **)b;
+  const e708Window *w1=*(e708Window * const*)a;
+  const e708Window *w2=*(e708Window * const*)b;
   return w1->priority-w2->priority;
 }
 
 void clearTV (cc708_service_decoder *decoder)
 {
-  for (int i=0; i<I708_SCREENGRID_ROWS; i++)
+  for (unsigned char (&row)[I708_SCREENGRID_COLUMNS + 1] : decoder->tv.chars)
   {
-    memset (decoder->tv.chars[i], ' ', I708_SCREENGRID_COLUMNS);
-    decoder->tv.chars[i][I708_SCREENGRID_COLUMNS]=0;
+    memset (row, ' ', I708_SCREENGRID_COLUMNS);
+    row[I708_SCREENGRID_COLUMNS]=0;
   }
 };
 
@@ -183,10 +183,10 @@ void printTVtoBuf (cc708_service_decoder *decoder)
 {
   int empty=1;
   decoder->textlen = 0;
-  for (int i=0;i<75;i++)
+  for (unsigned char(&row)[I708_SCREENGRID_COLUMNS + 1] : decoder->tv.chars)
   {
     for (int j=0;j<210;j++)
-      if (decoder->tv.chars[i][j] != ' ')
+      if (row[j] != ' ')
       {
         empty=0;
         break;
@@ -197,23 +197,23 @@ void printTVtoBuf (cc708_service_decoder *decoder)
   if (empty)
     return; // Nothing to write
 
-  for (int i=0;i<75;i++)
+  for (unsigned char(&row)[I708_SCREENGRID_COLUMNS + 1] : decoder->tv.chars)
   {
     int empty=1;
     for (int j=0;j<210;j++)
-      if (decoder->tv.chars[i][j] != ' ')
+      if (row[j] != ' ')
         empty=0;
     if (!empty)
     {
       int f,l; // First,last used char
       for (f=0;f<210;f++)
-        if (decoder->tv.chars[i][f] != ' ')
+        if (row[f] != ' ')
           break;
       for (l=209;l>0;l--)
-        if (decoder->tv.chars[i][l]!=' ')
+        if (row[l]!=' ')
           break;
       for (int j=f;j<=l;j++)
-        decoder->text[decoder->textlen++] = decoder->tv.chars[i][j];
+        decoder->text[decoder->textlen++] = row[j];
       decoder->text[decoder->textlen++] = '\r';
       decoder->text[decoder->textlen++] = '\n';
     }
@@ -231,10 +231,10 @@ void updateScreen (cc708_service_decoder *decoder)
   // TO SEVERAL FILES
   e708Window *wnd[I708_MAX_WINDOWS]; // We'll store here the visible windows that contain anything
   int visible=0;
-  for (int i=0;i<I708_MAX_WINDOWS;i++)
+  for (e708Window& window : decoder->windows)
   {
-    if (decoder->windows[i].is_defined && decoder->windows[i].visible && !decoder->windows[i].is_empty)
-      wnd[visible++]=&decoder->windows[i];
+    if (window.is_defined && window.visible && !window.is_empty)
+      wnd[visible++]=&window;
   }
   qsort (wnd,visible,sizeof (e708Window *),compWindowsPriorities);
 
@@ -314,7 +314,7 @@ void rollupWindow(cc708_service_decoder *decoder, int window)
 how many bytes would be consumed if these codes were supported, as defined in the specs.
 Note: EXT1 not included */
 // C2: Extended Miscellaneous Control Codes
-// TODO: This code is completely untested due to lack of samples. Just following specs!
+//! @todo This code is completely untested due to lack of samples. Just following specs!
 int handle_708_C2 (cc708_service_decoder *decoder, unsigned char *data, int data_length)
 {
   if (data[0]<=0x07) // 00-07...
@@ -338,7 +338,7 @@ int handle_708_C3 (cc708_service_decoder *decoder, unsigned char *data, int data
 
   // These are variable length commands, that can even span several segments
   // (they allow even downloading fonts or graphics).
-  // TODO: Implemen if a sample ever appears
+  //! @todo Implement if a sample ever appears
   return 0; // Unreachable, but otherwise there's compilers warnings
 }
 
@@ -346,7 +346,7 @@ int handle_708_C3 (cc708_service_decoder *decoder, unsigned char *data, int data
 // G2 (20-7F) => Mostly unmapped, except for a few characters.
 // G3 (A0-FF) => A0 is the CC symbol, everything else reserved for future expansion in EIA708-B
 // C2 (00-1F) => Reserved for future extended misc. control and captions command codes
-// TODO: This code is completely untested due to lack of samples. Just following specs!
+//! @todo This code is completely untested due to lack of samples. Just following specs!
 // Returns number of used bytes, usually 1 (since EXT1 is not counted).
 int handle_708_extended_char (cc708_service_decoder *decoder, unsigned char *data, int data_length)
 {
@@ -368,7 +368,7 @@ int handle_708_extended_char (cc708_service_decoder *decoder, unsigned char *dat
   else if (code>=0x80 && code<=0x9F)
   {
     used=handle_708_C3 (decoder, data, data_length);
-    // TODO: Something
+    //! @todo Something
   }
   // Group G3
   else
@@ -429,10 +429,10 @@ int handle_708_C0 (cc708_service_decoder *decoder, unsigned char *data, int data
       process_cr (decoder);
       break;
     case 0x0e: // HCR (Horizontal Carriage Return)
-      // TODO: Process HDR
+      //! @todo Process HDR
       break;
     case 0x0c: // FF (Form Feed)
-      // TODO: Process FF
+      //! @todo Process FF
       break;
     }
     len=1;
@@ -448,7 +448,7 @@ int handle_708_C0 (cc708_service_decoder *decoder, unsigned char *data, int data
     // Only PE16 is defined.
     if (data[0]==0x18) // PE16
     {
-      ; // TODO: Handle PE16
+      ; //! @todo Handle PE16
     }
     len=3;
   }
@@ -460,7 +460,7 @@ int handle_708_C0 (cc708_service_decoder *decoder, unsigned char *data, int data
   {
     return -1;
   }
-  // TODO: Do something useful eventually
+  //! @todo Do something useful eventually
   return len;
 }
 
@@ -505,7 +505,7 @@ void process_character (cc708_service_decoder *decoder, unsigned char internal_c
 // G0 - Code Set - ASCII printable characters
 int handle_708_G0 (cc708_service_decoder *decoder, unsigned char *data, int data_length)
 {
-  // TODO: Substitution of the music note character for the ASCII DEL character
+  //! @todo Substitution of the music note character for the ASCII DEL character
   unsigned char c=get_internal_from_G0 (data[0]);
   process_character (decoder, c);
   return 1;
@@ -570,14 +570,14 @@ void handle_708_DSW_DisplayWindows (cc708_service_decoder *decoder, int windows_
   else
   {
     int changes=0;
-    for (int i=0; i<8; i++)
+    for (e708Window& window : decoder->windows)
     {
       if (windows_bitmap & 1)
       {
-        if (!decoder->windows[i].visible)
+        if (!window.visible)
         {
           changes=1;
-          decoder->windows[i].visible=1;
+          window.visible=1;
         }
       }
       windows_bitmap>>=1;
@@ -594,16 +594,16 @@ void handle_708_HDW_HideWindows (cc708_service_decoder *decoder, int windows_bit
   else
   {
     int changes=0;
-    for (int i=0; i<8; i++)
+    for (e708Window& window : decoder->windows)
     {
       if (windows_bitmap & 1)
       {
-        if (decoder->windows[i].is_defined && decoder->windows[i].visible && !decoder->windows[i].is_empty)
+        if (window.is_defined && window.visible && !window.is_empty)
         {
           changes=1;
-          decoder->windows[i].visible=0;
+          window.visible=0;
         }
-        // TODO: Actually Hide Window
+        //! @todo Actually Hide Window
       }
       windows_bitmap>>=1;
     }
@@ -618,11 +618,11 @@ void handle_708_TGW_ToggleWindows (cc708_service_decoder *decoder, int windows_b
     ;//ccx_common_logging.debug_ftn(CCX_DMT_708, "None\n");
   else
   {
-    for (int i=0; i<8; i++)
+    for (e708Window& window : decoder->windows)
     {
       if (windows_bitmap & 1)
       {
-        decoder->windows[i].visible=!decoder->windows[i].visible;
+        window.visible=!window.visible;
       }
       windows_bitmap>>=1;
     }
@@ -672,7 +672,7 @@ void handle_708_DFx_DefineWindow (cc708_service_decoder *decoder, int window, un
   {
     // If the window is being created, all character positions in the window
     // are set to the fill color...
-    // TODO: COLORS
+    //! @todo COLORS
     // ...and the pen location is set to (0,0)
     decoder->windows[window].pen_column=0;
     decoder->windows[window].pen_row=0;
@@ -687,7 +687,7 @@ void handle_708_DFx_DefineWindow (cc708_service_decoder *decoder, int window, un
           decoder->current_window=-1;
           for (int j=0;j<i;j++)
             free (decoder->windows[window].rows[j]);
-          return; // TODO: Warn somehow
+          return; //! @todo Warn somehow
         }
       }
       decoder->windows[window].memory_reserved=1;
@@ -745,7 +745,7 @@ void deleteWindow (cc708_service_decoder *decoder, int window)
     // or DefineWindow command.
     decoder->current_window=-1;
   }
-  // TODO: Do the actual deletion (remove from display if needed, etc), mark as
+  //! @todo Do the actual deletion (remove from display if needed, etc), mark as
   // not defined, etc
   if (decoder->windows[window].is_defined)
   {
@@ -843,13 +843,13 @@ void handle_708_SPL_SetPenLocation (cc708_service_decoder *decoder, unsigned cha
   ------------------------------------------------------- */
 void handle_708_DLY_Delay (cc708_service_decoder *decoder, int tenths_of_sec)
 {
-  // TODO: Probably ask for the current FTS and wait for this time before resuming -
+  //! @todo Probably ask for the current FTS and wait for this time before resuming -
   // not sure it's worth it though
 }
 
 void handle_708_DLC_DelayCancel (cc708_service_decoder *decoder)
 {
-  // TODO: See above
+  //! @todo See above
 }
 
 // C1 Code Set - Captioning Commands Control Codes
@@ -959,7 +959,7 @@ void process_service_block (cc708_service_decoder *decoder, unsigned char *data,
         used=handle_708_G1 (decoder,data+i,data_length-i);
       if (used==-1)
       {
-        // TODO: Not sure if a local reset is going to be helpful here.
+        //! @todo Not sure if a local reset is going to be helpful here.
         cc708_service_reset (decoder);
         return;
       }
@@ -974,11 +974,11 @@ void process_service_block (cc708_service_decoder *decoder, unsigned char *data,
 
   // update rollup windows
   int update = 0;
-  for (int i = 0; i<I708_MAX_WINDOWS; i++)
+  for (e708Window& window : decoder->windows)
   {
-    if (decoder->windows[i].is_defined && decoder->windows[i].visible &&
-      (decoder->windows[i].anchor_point == anchorpoint_bottom_left ||
-      decoder->windows[i].anchor_point == anchorpoint_bottom_center))
+    if (window.is_defined && window.visible &&
+      (window.anchor_point == anchorpoint_bottom_left ||
+      window.anchor_point == anchorpoint_bottom_center))
     {
       update++;
       break;
@@ -1093,7 +1093,7 @@ void decode_708 (const unsigned char *data, int datalength, cc708_service_decode
     case 0:
       // only use 608 as fallback
       if (!decoders[0].parent->m_seen708)
-        decode_cc(decoders[0].parent->m_cc608decoder, (uint8_t*)data+i, 3);
+        decode_cc(decoders[0].parent->m_cc608decoder, (const uint8_t*)data+i, 3);
       break;
     case 2:
       if (cc_valid==0) // This ends the previous packet if complete

@@ -1,25 +1,26 @@
-set(SOURCES GUIDialogAudioSubtitleSettings.cpp
+set(SOURCES GUIDialogAudioSettings.cpp
             GUIDialogFullScreenInfo.cpp
             GUIDialogSubtitles.cpp
+            GUIDialogSubtitleSettings.cpp
             GUIDialogTeletext.cpp
             GUIDialogVideoBookmarks.cpp
             GUIDialogVideoInfo.cpp
             GUIDialogVideoOSD.cpp
             GUIDialogVideoSettings.cpp)
 
-set(HEADERS GUIDialogAudioSubtitleSettings.h
+set(HEADERS GUIDialogAudioSettings.h
             GUIDialogFullScreenInfo.h
             GUIDialogSubtitles.h
+            GUIDialogSubtitleSettings.h
             GUIDialogTeletext.h
             GUIDialogVideoBookmarks.h
             GUIDialogVideoInfo.h
             GUIDialogVideoOSD.h
             GUIDialogVideoSettings.h)
 
-core_add_library(video_dialogs)
-
-add_dependencies(video_dialogs libcpluff)
-
-if(ENABLE_INTERNAL_FFMPEG)
-  add_dependencies(video_dialogs ffmpeg)
+if(OPENGL_FOUND OR CORE_SYSTEM_NAME STREQUAL windows OR CORE_SYSTEM_NAME STREQUAL windowsstore)
+  list(APPEND SOURCES GUIDialogCMSSettings.cpp)
+  list(APPEND HEADERS GUIDialogCMSSettings.h)
 endif()
+
+core_add_library(video_dialogs)

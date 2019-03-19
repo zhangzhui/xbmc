@@ -1,21 +1,9 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "TextureDatabase.h"
@@ -53,14 +41,14 @@ typedef struct
 
 static const translateField fields[] = {
   { "none",          TF_None,          CDatabaseQueryRule::TEXT_FIELD    },
-  { "textureid",     TF_Id,            CDatabaseQueryRule::NUMERIC_FIELD },
+  { "textureid",     TF_Id,            CDatabaseQueryRule::REAL_FIELD    },
   { "url",           TF_Url,           CDatabaseQueryRule::TEXT_FIELD    },
   { "cachedurl",     TF_CachedUrl,     CDatabaseQueryRule::TEXT_FIELD    },
   { "lasthashcheck", TF_LastHashCheck, CDatabaseQueryRule::TEXT_FIELD    },
   { "imagehash",     TF_ImageHash,     CDatabaseQueryRule::TEXT_FIELD    },
-  { "width",         TF_Width,         CDatabaseQueryRule::NUMERIC_FIELD },
-  { "height",        TF_Height,        CDatabaseQueryRule::NUMERIC_FIELD },
-  { "usecount",      TF_UseCount,      CDatabaseQueryRule::NUMERIC_FIELD },
+  { "width",         TF_Width,         CDatabaseQueryRule::REAL_FIELD    },
+  { "height",        TF_Height,        CDatabaseQueryRule::REAL_FIELD    },
+  { "usecount",      TF_UseCount,      CDatabaseQueryRule::REAL_FIELD    },
   { "lastused",      TF_LastUsed,      CDatabaseQueryRule::TEXT_FIELD    }
 };
 
@@ -68,15 +56,15 @@ static const size_t NUM_FIELDS = sizeof(fields) / sizeof(translateField);
 
 int CTextureRule::TranslateField(const char *field) const
 {
-  for (unsigned int i = 0; i < NUM_FIELDS; i++)
-    if (StringUtils::EqualsNoCase(field, fields[i].string)) return fields[i].field;
+  for (const translateField& f : fields)
+    if (StringUtils::EqualsNoCase(field, f.string)) return f.field;
   return FieldNone;
 }
 
 std::string CTextureRule::TranslateField(int field) const
 {
-  for (unsigned int i = 0; i < NUM_FIELDS; i++)
-    if (field == fields[i].field) return fields[i].string;
+  for (const translateField& f : fields)
+    if (field == f.field) return f.string;
   return "none";
 }
 
@@ -96,8 +84,8 @@ std::string CTextureRule::GetField(int field, const std::string &type) const
 
 CDatabaseQueryRule::FIELD_TYPE CTextureRule::GetFieldType(int field) const
 {
-  for (unsigned int i = 0; i < NUM_FIELDS; i++)
-    if (field == fields[i].field) return fields[i].type;
+  for (const translateField& f : fields)
+    if (field == f.field) return f.type;
   return TEXT_FIELD;
 }
 
@@ -152,13 +140,9 @@ std::string CTextureUtils::UnwrapImageURL(const std::string &image)
   return image;
 }
 
-CTextureDatabase::CTextureDatabase()
-{
-}
+CTextureDatabase::CTextureDatabase() = default;
 
-CTextureDatabase::~CTextureDatabase()
-{
-}
+CTextureDatabase::~CTextureDatabase() = default;
 
 bool CTextureDatabase::Open()
 {
@@ -183,7 +167,7 @@ void CTextureDatabase::CreateAnalytics()
   m_pDS->exec("CREATE INDEX idxTexture ON texture(url)");
   m_pDS->exec("CREATE INDEX idxSize ON sizes(idtexture, size)");
   m_pDS->exec("CREATE INDEX idxSize2 ON sizes(idtexture, width, height)");
-  // TODO: Should the path index be a covering index? (we need only retrieve texture)
+  //! @todo Should the path index be a covering index? (we need only retrieve texture)
   m_pDS->exec("CREATE INDEX idxPath ON path(url, type)");
 
   CLog::Log(LOGINFO, "%s creating triggers", __FUNCTION__);

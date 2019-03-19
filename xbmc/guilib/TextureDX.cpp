@@ -1,28 +1,13 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "TextureDX.h"
-#include "windowing/WindowingFactory.h"
 #include "utils/log.h"
-
-#ifdef HAS_DX
 
 /************************************************************************/
 /*    CDXTexture                                                       */
@@ -39,7 +24,7 @@ CDXTexture::~CDXTexture()
 
 void CDXTexture::CreateTextureObject()
 {
-  m_texture.Create(m_textureWidth, m_textureHeight, 1, g_Windowing.DefaultD3DUsage(), GetFormat());
+  m_texture.Create(m_textureWidth, m_textureHeight, 1, D3D11_USAGE_DEFAULT, GetFormat());
 }
 
 DXGI_FORMAT CDXTexture::GetFormat()
@@ -84,8 +69,8 @@ void CDXTexture::LoadToGPU()
   }
 
   bool needUpdate = true;
-  D3D11_USAGE usage = g_Windowing.DefaultD3DUsage();
-  if (m_format == XB_FMT_RGB8 && usage == D3D11_USAGE_DEFAULT)
+  D3D11_USAGE usage = D3D11_USAGE_DEFAULT;
+  if (m_format == XB_FMT_RGB8)
     usage = D3D11_USAGE_DYNAMIC; // fallback to dynamic to allow CPU write to texture
 
   if (m_texture.Get() == nullptr)
@@ -94,12 +79,12 @@ void CDXTexture::LoadToGPU()
     if (m_format != XB_FMT_RGB8)
     {
       // this is faster way to create texture with initial data instead of create empty and then copy to it
-      m_texture.Create(m_textureWidth, m_textureHeight, 1, usage, GetFormat(), m_pixels, GetPitch());
+      m_texture.Create(m_textureWidth, m_textureHeight, IsMipmapped() ? 0 : 1, usage, GetFormat(), m_pixels, GetPitch());
       if (m_texture.Get() != nullptr)
         needUpdate = false;
     }
     else
-      m_texture.Create(m_textureWidth, m_textureHeight, 1, usage, GetFormat());
+      m_texture.Create(m_textureWidth, m_textureHeight, IsMipmapped() ? 0 : 1, usage, GetFormat());
 
     if (m_texture.Get() == nullptr)
     {
@@ -120,7 +105,7 @@ void CDXTexture::LoadToGPU()
       m_texture.Release();
       usage = D3D11_USAGE_DYNAMIC;
 
-      m_texture.Create(m_textureWidth, m_textureHeight, 1, usage, GetFormat(), m_pixels, GetPitch());
+      m_texture.Create(m_textureWidth, m_textureHeight, IsMipmapped() ? 0 : 1, usage, GetFormat(), m_pixels, GetPitch());
       if (m_texture.Get() == nullptr)
       {
         CLog::Log(LOGDEBUG, "CDXTexture::CDXTexture: Error creating new texture for size %d x %d.", m_textureWidth, m_textureHeight);
@@ -177,12 +162,18 @@ void CDXTexture::LoadToGPU()
     }
     else
     {
-      CLog::Log(LOGERROR, __FUNCTION__" - failed to lock texture.");
+      CLog::LogF(LOGERROR, "failed to lock texture.");
     }
     m_texture.UnlockRect(0);
+    if (usage != D3D11_USAGE_STAGING && IsMipmapped())
+      m_texture.GenerateMipmaps();
   }
-  _aligned_free(m_pixels);
-  m_pixels = nullptr;
+
+  if (!m_bCacheMemory)
+  {
+    _aligned_free(m_pixels);
+    m_pixels = nullptr;
+  }
 
   m_loadedToGPU = true;
 }
@@ -190,5 +181,3 @@ void CDXTexture::LoadToGPU()
 void CDXTexture::BindToUnit(unsigned int unit)
 {
 }
-
-#endif

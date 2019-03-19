@@ -1,21 +1,9 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "utils/DatabaseUtils.h"
@@ -360,11 +348,6 @@ TEST(TestDatabaseUtils, GetField_MediaTypeMusicVideo)
                                    DatabaseQueryPartSelect);
   EXPECT_STREQ(refstr.c_str(), varstr.c_str());
 
-  refstr = StringUtils::Format("musicvideo_view.c%02d",VIDEODB_ID_MUSICVIDEO_YEAR);
-  varstr = DatabaseUtils::GetField(FieldYear, MediaTypeMusicVideo,
-                                   DatabaseQueryPartSelect);
-  EXPECT_STREQ(refstr.c_str(), varstr.c_str());
-
   refstr = StringUtils::Format("musicvideo_view.c%02d",VIDEODB_ID_MUSICVIDEO_PLOT);
   varstr = DatabaseUtils::GetField(FieldPlot, MediaTypeMusicVideo,
                                    DatabaseQueryPartSelect);
@@ -484,11 +467,6 @@ TEST(TestDatabaseUtils, GetField_MediaTypeMovie)
 
   refstr = StringUtils::Format("movie_view.c%02d", VIDEODB_ID_CREDITS);
   varstr = DatabaseUtils::GetField(FieldWriter, MediaTypeMovie,
-                                   DatabaseQueryPartSelect);
-  EXPECT_STREQ(refstr.c_str(), varstr.c_str());
-
-  refstr = StringUtils::Format("movie_view.c%02d", VIDEODB_ID_YEAR);
-  varstr = DatabaseUtils::GetField(FieldYear, MediaTypeMovie,
                                    DatabaseQueryPartSelect);
   EXPECT_STREQ(refstr.c_str(), varstr.c_str());
 
@@ -822,7 +800,7 @@ TEST(TestDatabaseUtils, GetFieldIndex_None)
   EXPECT_EQ(refindex, varindex);
 }
 
-/* TODO: Should enums in CMusicDatabase be made public instead? */
+//! @todo Should enums in CMusicDatabase be made public instead?
 TEST(TestDatabaseUtils, GetFieldIndex_MediaTypeAlbum)
 {
   int refindex, varindex;
@@ -995,10 +973,6 @@ TEST(TestDatabaseUtils, GetFieldIndex_MediaTypeMusicVideo)
   varindex = DatabaseUtils::GetFieldIndex(FieldStudio, MediaTypeMusicVideo);
   EXPECT_EQ(refindex, varindex);
 
-  refindex = VIDEODB_ID_MUSICVIDEO_YEAR + 2;
-  varindex = DatabaseUtils::GetFieldIndex(FieldYear, MediaTypeMusicVideo);
-  EXPECT_EQ(refindex, varindex);
-
   refindex = VIDEODB_ID_MUSICVIDEO_PLOT + 2;
   varindex = DatabaseUtils::GetFieldIndex(FieldPlot, MediaTypeMusicVideo);
   EXPECT_EQ(refindex, varindex);
@@ -1043,6 +1017,10 @@ TEST(TestDatabaseUtils, GetFieldIndex_MediaTypeMusicVideo)
   varindex = DatabaseUtils::GetFieldIndex(FieldUserRating, MediaTypeMusicVideo);
   EXPECT_EQ(refindex, varindex);
 
+  refindex = VIDEODB_DETAILS_MUSICVIDEO_PREMIERED;
+  varindex = DatabaseUtils::GetFieldIndex(FieldYear, MediaTypeMusicVideo);
+  EXPECT_EQ(refindex, varindex);
+
   refindex = -1;
   varindex = DatabaseUtils::GetFieldIndex(FieldRandom, MediaTypeMusicVideo);
   EXPECT_EQ(refindex, varindex);
@@ -1078,10 +1056,6 @@ TEST(TestDatabaseUtils, GetFieldIndex_MediaTypeMovie)
 
   refindex = VIDEODB_ID_CREDITS + 2;
   varindex = DatabaseUtils::GetFieldIndex(FieldWriter, MediaTypeMovie);
-  EXPECT_EQ(refindex, varindex);
-
-  refindex = VIDEODB_ID_YEAR + 2;
-  varindex = DatabaseUtils::GetFieldIndex(FieldYear, MediaTypeMovie);
   EXPECT_EQ(refindex, varindex);
 
   refindex = VIDEODB_ID_RUNTIME + 2;
@@ -1146,6 +1120,10 @@ TEST(TestDatabaseUtils, GetFieldIndex_MediaTypeMovie)
 
   refindex = VIDEODB_DETAILS_MOVIE_RATING;
   varindex = DatabaseUtils::GetFieldIndex(FieldRating, MediaTypeMovie);
+  EXPECT_EQ(refindex, varindex);
+
+  refindex = VIDEODB_DETAILS_MOVIE_PREMIERED;
+  varindex = DatabaseUtils::GetFieldIndex(FieldYear, MediaTypeMovie);
   EXPECT_EQ(refindex, varindex);
 
   refindex = -1;
@@ -1357,7 +1335,7 @@ TEST(TestDatabaseUtils, GetFieldValue)
   EXPECT_TRUE(v_string.isString());
 }
 
-/* TODO: Need some way to test this function */
+//! @todo Need some way to test this function
 // TEST(TestDatabaseUtils, GetDatabaseResults)
 // {
 //   static bool GetDatabaseResults(MediaType mediaType, const FieldList &fields,
@@ -1374,7 +1352,7 @@ TEST(TestDatabaseUtils, BuildLimitClause)
 // class DatabaseUtils
 // {
 // public:
-// 
-// 
+//
+//
 //   static std::string BuildLimitClause(int end, int start = 0);
 // };

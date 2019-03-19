@@ -1,21 +1,9 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #pragma once
@@ -41,6 +29,7 @@ namespace XBMCAddon
     class Monitor : public AddonCallback
     {
       String Id;
+      long invokerId;
       CEvent abortEvent;
     public:
       Monitor();
@@ -68,6 +57,7 @@ namespace XBMCAddon
       inline void    OnNotification(const String &sender, const String &method, const String &data) { XBMC_TRACE; invokeCallback(new CallbackFunction<Monitor,const String,const String,const String>(this,&Monitor::onNotification,sender,method,data)); }
 
       inline const String& GetId() { return Id; }
+      inline long GetInvokerId() { return invokerId; }
 
       void OnAbortRequested();
 #endif
@@ -155,6 +145,10 @@ namespace XBMCAddon
       /// @note Will be called when library clean has ended and return video or
       /// music to indicate which library is being scanned
       ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v14 New function added.
+      ///
       onScanStarted(...);
 #else
       virtual void onScanStarted(const String library) { XBMC_TRACE; }
@@ -173,6 +167,10 @@ namespace XBMCAddon
       /// @note Will be called when library clean has ended and return video or
       /// music to indicate which library has been scanned
       ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v14 New function added.
+      ///
       onScanFinished(...);
 #else
       virtual void onScanFinished(const String library) { XBMC_TRACE; }
@@ -183,7 +181,8 @@ namespace XBMCAddon
       /// \ingroup python_monitor
       /// @brief \python_func{ onDatabaseScanStarted(database) }
       ///-----------------------------------------------------------------------
-      /// @warning Deprecated, use onScanStarted().
+      /// @python_v13 New function added.
+      /// @python_v14 Deprecated. Use **onScanStarted()**.
       ///
       onDatabaseScanStarted(...);
 #else
@@ -195,7 +194,7 @@ namespace XBMCAddon
       /// \ingroup python_monitor
       /// @brief \python_func{ onDatabaseUpdated(database) }
       ///-----------------------------------------------------------------------
-      /// @warning Deprecated, use onScanFinished().
+      /// @python_v14 Deprecated. Use **onScanFinished()**.
       ///
       onDatabaseUpdated(...);
 #else
@@ -215,6 +214,10 @@ namespace XBMCAddon
       /// @note Will be called when library clean has ended and return video or
       /// music to indicate which library has been cleaned
       ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v14 New function added.
+      ///
       onCleanStarted(...);
 #else
       virtual void onCleanStarted(const String library) { XBMC_TRACE; }
@@ -233,6 +236,10 @@ namespace XBMCAddon
       /// @note Will be called when library clean has ended and return video or
       /// music to indicate which library has been finished
       ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v14 New function added.
+      ///
       onCleanFinished(...);
 #else
       virtual void onCleanFinished(const String library) { XBMC_TRACE; }
@@ -243,20 +250,17 @@ namespace XBMCAddon
       /// \ingroup python_monitor
       /// @brief \python_func{ onAbortRequested() }
       ///-----------------------------------------------------------------------
-      /// @warning Deprecated, use waitForAbort() to be notified about this event.
+      /// @python_v14 Deprecated. Use **waitForAbort()** to be notified about this event.
       ///
       onAbortRequested();
 #else
-      /**
-       * onAbortRequested() -- Deprecated, use waitForAbort() to be notified about this event.\n
-       */
       virtual void    onAbortRequested() { XBMC_TRACE; }
 #endif
 
 #ifdef DOXYGEN_SHOULD_USE_THIS
       ///
       /// \ingroup python_monitor
-      /// @brief \python_func{ onNotification(sender, method, data }
+      /// @brief \python_func{ onNotification(sender, method, data) }
       ///-----------------------------------------------------------------------
       /// onNotification method.
       ///
@@ -265,6 +269,10 @@ namespace XBMCAddon
       /// @param data                JSON-encoded data of the notification
       ///
       /// @note Will be called when Kodi receives or sends a notification
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v13 New function added.
       ///
       onNotification(...);
 #else
@@ -282,9 +290,14 @@ namespace XBMCAddon
       ///
       /// @param timeout                 [opt] float - timeout in seconds.
       ///                                Default: no timeout.
+      ///
       /// @return                        True when abort have been requested,
       ///                                False if a timeout is given and the
       ///                                operation times out.
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v14 New function added.
       ///
       waitForAbort(...);
 #else
@@ -299,11 +312,15 @@ namespace XBMCAddon
       ///
       /// @return                        True if requested
       ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v14 New function added.
+      ///
       abortRequested();
 #else
       bool abortRequested();
 #endif
-      virtual ~Monitor();
+      ~Monitor() override;
     };
     /** @} */
   }

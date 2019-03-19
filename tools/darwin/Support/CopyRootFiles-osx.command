@@ -13,7 +13,7 @@ if [ "$ACTION" = build ] ; then
 SYNC="rsync -aq --exclude .git* --exclude .DS_Store* --exclude *.dll --exclude *.DLL --exclude *linux.* --exclude *arm-osx.* --exclude *.zlib --exclude *.a"
 
 # rsync command for excluding pngs and jpgs as well. Note that if the skin itself is not compiled
-# using XBMCTex then excluding the pngs and jpgs will most likely make the skin unusable 
+# using XBMCTex then excluding the pngs and jpgs will most likely make the skin unusable
 SYNCSKIN="rsync -aq --exclude .git* --exclude CVS* --exclude .svn* --exclude .cvsignore* --exclude .cvspass* --exclude .DS_Store* --exclude *.dll  --exclude *.DLL --exclude *linux.* --exclude *.png --exclude *.jpg --exclude *.bat"
 
 # rsync command for including everything but the skins
@@ -28,19 +28,18 @@ mkdir -p "$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/media"
 mkdir -p "$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/tools/darwin/runtime"
 mkdir -p "$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/extras/user"
 
-${SYNC} "$SRCROOT/LICENSE.GPL" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/"
+${SYNC} "$SRCROOT/LICENSE.md" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/"
+${SYNC} "$SRCROOT/privacy-policy.txt" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME"
 ${SYNC} "$SRCROOT/xbmc/platform/darwin/Credits.html" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/"
 ${SYNC} "$SRCROOT/tools/darwin/runtime"	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/tools/darwin"
 ${ADDONSYNC} "$SRCROOT/addons"		"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME"
 ${SYNC} "$SRCROOT/media" 		"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME"
 ${SYNCSKIN} "$SRCROOT/addons/skin.estuary" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/addons"
 ${SYNC} "$SRCROOT/addons/skin.estuary/extras" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/addons/skin.estuary"
-${SYNC} "$SRCROOT/addons/skin.estuary/icon.png" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/addons/skin.estuary"
-${SYNC} "$SRCROOT/addons/skin.estuary/fanart.jpg"   "$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/addons/skin.estuary"
+${SYNC} "$SRCROOT/addons/skin.estuary/resources"   "$TARGET_BUILD_DIR/$TARGET_NAME/AppData/AppHome/addons/skin.estuary"
 ${SYNCSKIN} "$SRCROOT/addons/skin.estouchy" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/addons"
 ${SYNC} "$SRCROOT/addons/skin.estouchy/background" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/addons/skin.estouchy"
-${SYNC} "$SRCROOT/addons/skin.estouchy/icon.png" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/addons/skin.estouchy"
-${SYNC} "$SRCROOT/addons/skin.estouchy/fanart.jpg" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/addons/skin.estouchy"
+${SYNC} "$SRCROOT/addons/skin.estouchy/resources" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME/addons/skin.estouchy"
 ${SYNC} "$SRCROOT/system" 		"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME"
 ${SYNC} "$SRCROOT/userdata" 	"$TARGET_BUILD_DIR/$TARGET_NAME/Contents/Resources/$APP_NAME"
 

@@ -85,8 +85,8 @@
 				<font>font25</font>
 				<align>center</align>
 				<aligny>center</aligny>
-				<texturenofocus>-</texturenofocus>
-				<texturefocus>-</texturefocus>
+				<texturenofocus></texturenofocus>
+				<texturefocus></texturefocus>
 			</control>
 			<control type="group">
 				<posx>0</posx>
@@ -169,6 +169,12 @@
 						<ondown>131</ondown>
 						<include>KeyboardButton</include>
 					</control>
+					<control type="button" id="112">
+						<description>(0,12) key button</description>
+						<onup>306</onup>
+                                                <ondown>132</ondown>
+                                                <include>KeyboardButton</include>
+                                        </control>
 					<control type="group">
 						<posx>0</posx>
 						<posy>0</posy>
@@ -186,7 +192,7 @@
 							<font>font25</font>
 							<align>center</align>
 							<aligny>center</aligny>
-							<label>-</label>
+							<label></label>
 						</control>
 						<control type="image">
 							<description>BackSpace Icon image</description>
@@ -277,6 +283,12 @@
 						<ondown>151</ondown>
 						<include>KeyboardButton</include>
 					</control>
+					<control type="button" id="132">
+						<description>(1,12) key button</description>
+						<onup>112</onup>
+						<ondown>152</ondown>
+						<include>KeyboardButton</include>
+					</control>
 					<control type="group">
 						<posx>0</posx>
 						<posy>0</posy>
@@ -294,7 +306,7 @@
 							<font>font25</font>
 							<align>center</align>
 							<aligny>center</aligny>
-							<label>-</label>
+							<label></label>
 						</control>
 						<control type="image">
 							<description>Enter\done Icon image</description>
@@ -384,6 +396,12 @@
 						<description>(2,11) key button</description>
 						<onup>131</onup>
 						<ondown>171</ondown>
+						<include>KeyboardButton</include>
+					</control>
+					<control type="button" id="152">
+						<description>(2,12) key button</description>
+						<onup>132</onup>
+						<ondown>172</ondown>
 						<include>KeyboardButton</include>
 					</control>
 					<control type="togglebutton" id="303">
@@ -483,6 +501,12 @@
 						<ondown>306</ondown>
 						<include>KeyboardButton</include>
 					</control>
+					<control type="button" id="172">
+						<description>(3,12) key button</description>
+						<onup>152</onup>
+						<ondown>307</ondown>
+						<include>KeyboardButton</include>
+					</control>
 					<control type="group">
 						<posx>0</posx>
 						<posy>0</posy>
@@ -500,7 +524,7 @@
 							<font>font25</font>
 							<align>left</align>
 							<aligny>center</aligny>
-							<label>-</label>
+							<label></label>
 						</control>
 						<control type="image">
 							<description>Shift Icon image</description>
@@ -566,7 +590,7 @@
 							<font>font25</font>
 							<align>center</align>
 							<aligny>center</aligny>
-							<label>-</label>
+							<label></label>
 						</control>
 						<control type="image">
 							<description>Previous Icon image</description>
@@ -595,7 +619,7 @@
 							<font>font25</font>
 							<align>center</align>
 							<aligny>center</aligny>
-							<label>-</label>
+							<label></label>
 						</control>
 						<control type="image">
 							<description>Next Icon image</description>

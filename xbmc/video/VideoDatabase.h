@@ -1,27 +1,17 @@
-#pragma once
 /*
- *      Copyright (C) 2016 Team Kodi
- *      http://kodi.tv
+ *  Copyright (C) 2016-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Kodi; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
+
+#pragma once
 
 #include <memory>
 #include <set>
 #include <utility>
+#include <vector>
 
 #include "addons/Scraper.h"
 #include "Bookmark.h"
@@ -76,6 +66,7 @@ enum VideoDbDetails
   VideoDbDetailsStream   = 0x08,
   VideoDbDetailsCast     = 0x10,
   VideoDbDetailsBookmark = 0x20,
+  VideoDbDetailsUniqueID = 0x40,
   VideoDbDetailsAll      = 0xFF
 } ;
 
@@ -86,18 +77,22 @@ enum VideoDbDetails
 
 #define VIDEODB_DETAILS_MOVIE_SET_ID            VIDEODB_MAX_COLUMNS + 2
 #define VIDEODB_DETAILS_MOVIE_USER_RATING       VIDEODB_MAX_COLUMNS + 3
-#define VIDEODB_DETAILS_MOVIE_SET_NAME          VIDEODB_MAX_COLUMNS + 4
-#define VIDEODB_DETAILS_MOVIE_SET_OVERVIEW      VIDEODB_MAX_COLUMNS + 5
-#define VIDEODB_DETAILS_MOVIE_FILE              VIDEODB_MAX_COLUMNS + 6
-#define VIDEODB_DETAILS_MOVIE_PATH              VIDEODB_MAX_COLUMNS + 7
-#define VIDEODB_DETAILS_MOVIE_PLAYCOUNT         VIDEODB_MAX_COLUMNS + 8
-#define VIDEODB_DETAILS_MOVIE_LASTPLAYED        VIDEODB_MAX_COLUMNS + 9
-#define VIDEODB_DETAILS_MOVIE_DATEADDED         VIDEODB_MAX_COLUMNS + 10
-#define VIDEODB_DETAILS_MOVIE_RESUME_TIME       VIDEODB_MAX_COLUMNS + 11
-#define VIDEODB_DETAILS_MOVIE_TOTAL_TIME        VIDEODB_MAX_COLUMNS + 12
-#define VIDEODB_DETAILS_MOVIE_RATING            VIDEODB_MAX_COLUMNS + 13
-#define VIDEODB_DETAILS_MOVIE_VOTES             VIDEODB_MAX_COLUMNS + 14
-#define VIDEODB_DETAILS_MOVIE_RATING_TYPE       VIDEODB_MAX_COLUMNS + 15
+#define VIDEODB_DETAILS_MOVIE_PREMIERED         VIDEODB_MAX_COLUMNS + 4
+#define VIDEODB_DETAILS_MOVIE_SET_NAME          VIDEODB_MAX_COLUMNS + 5
+#define VIDEODB_DETAILS_MOVIE_SET_OVERVIEW      VIDEODB_MAX_COLUMNS + 6
+#define VIDEODB_DETAILS_MOVIE_FILE              VIDEODB_MAX_COLUMNS + 7
+#define VIDEODB_DETAILS_MOVIE_PATH              VIDEODB_MAX_COLUMNS + 8
+#define VIDEODB_DETAILS_MOVIE_PLAYCOUNT         VIDEODB_MAX_COLUMNS + 9
+#define VIDEODB_DETAILS_MOVIE_LASTPLAYED        VIDEODB_MAX_COLUMNS + 10
+#define VIDEODB_DETAILS_MOVIE_DATEADDED         VIDEODB_MAX_COLUMNS + 11
+#define VIDEODB_DETAILS_MOVIE_RESUME_TIME       VIDEODB_MAX_COLUMNS + 12
+#define VIDEODB_DETAILS_MOVIE_TOTAL_TIME        VIDEODB_MAX_COLUMNS + 13
+#define VIDEODB_DETAILS_MOVIE_PLAYER_STATE      VIDEODB_MAX_COLUMNS + 14
+#define VIDEODB_DETAILS_MOVIE_RATING            VIDEODB_MAX_COLUMNS + 15
+#define VIDEODB_DETAILS_MOVIE_VOTES             VIDEODB_MAX_COLUMNS + 16
+#define VIDEODB_DETAILS_MOVIE_RATING_TYPE       VIDEODB_MAX_COLUMNS + 17
+#define VIDEODB_DETAILS_MOVIE_UNIQUEID_VALUE    VIDEODB_MAX_COLUMNS + 18
+#define VIDEODB_DETAILS_MOVIE_UNIQUEID_TYPE     VIDEODB_MAX_COLUMNS + 19
 
 #define VIDEODB_DETAILS_EPISODE_TVSHOW_ID       VIDEODB_MAX_COLUMNS + 2
 #define VIDEODB_DETAILS_EPISODE_USER_RATING     VIDEODB_MAX_COLUMNS + 3
@@ -114,9 +109,12 @@ enum VideoDbDetails
 #define VIDEODB_DETAILS_EPISODE_TVSHOW_MPAA     VIDEODB_MAX_COLUMNS + 14
 #define VIDEODB_DETAILS_EPISODE_RESUME_TIME     VIDEODB_MAX_COLUMNS + 15
 #define VIDEODB_DETAILS_EPISODE_TOTAL_TIME      VIDEODB_MAX_COLUMNS + 16
-#define VIDEODB_DETAILS_EPISODE_RATING          VIDEODB_MAX_COLUMNS + 17
-#define VIDEODB_DETAILS_EPISODE_VOTES           VIDEODB_MAX_COLUMNS + 18
-#define VIDEODB_DETAILS_EPISODE_RATING_TYPE     VIDEODB_MAX_COLUMNS + 19
+#define VIDEODB_DETAILS_EPISODE_PLAYER_STATE    VIDEODB_MAX_COLUMNS + 17
+#define VIDEODB_DETAILS_EPISODE_RATING          VIDEODB_MAX_COLUMNS + 18
+#define VIDEODB_DETAILS_EPISODE_VOTES           VIDEODB_MAX_COLUMNS + 19
+#define VIDEODB_DETAILS_EPISODE_RATING_TYPE     VIDEODB_MAX_COLUMNS + 20
+#define VIDEODB_DETAILS_EPISODE_UNIQUEID_VALUE  VIDEODB_MAX_COLUMNS + 21
+#define VIDEODB_DETAILS_EPISODE_UNIQUEID_TYPE   VIDEODB_MAX_COLUMNS + 22
 
 #define VIDEODB_DETAILS_TVSHOW_USER_RATING      VIDEODB_MAX_COLUMNS + 1
 #define VIDEODB_DETAILS_TVSHOW_DURATION         VIDEODB_MAX_COLUMNS + 2
@@ -130,16 +128,21 @@ enum VideoDbDetails
 #define VIDEODB_DETAILS_TVSHOW_RATING           VIDEODB_MAX_COLUMNS + 10
 #define VIDEODB_DETAILS_TVSHOW_VOTES            VIDEODB_MAX_COLUMNS + 11
 #define VIDEODB_DETAILS_TVSHOW_RATING_TYPE      VIDEODB_MAX_COLUMNS + 12
+#define VIDEODB_DETAILS_TVSHOW_UNIQUEID_VALUE   VIDEODB_MAX_COLUMNS + 13
+#define VIDEODB_DETAILS_TVSHOW_UNIQUEID_TYPE    VIDEODB_MAX_COLUMNS + 14
 
 #define VIDEODB_DETAILS_MUSICVIDEO_USER_RATING  VIDEODB_MAX_COLUMNS + 2
-#define VIDEODB_DETAILS_MUSICVIDEO_FILE         VIDEODB_MAX_COLUMNS + 3
-#define VIDEODB_DETAILS_MUSICVIDEO_PATH         VIDEODB_MAX_COLUMNS + 4
-#define VIDEODB_DETAILS_MUSICVIDEO_PLAYCOUNT    VIDEODB_MAX_COLUMNS + 5
-#define VIDEODB_DETAILS_MUSICVIDEO_LASTPLAYED   VIDEODB_MAX_COLUMNS + 6
-#define VIDEODB_DETAILS_MUSICVIDEO_DATEADDED    VIDEODB_MAX_COLUMNS + 7
-#define VIDEODB_DETAILS_MUSICVIDEO_RESUME_TIME  VIDEODB_MAX_COLUMNS + 8
-#define VIDEODB_DETAILS_MUSICVIDEO_TOTAL_TIME   VIDEODB_MAX_COLUMNS + 9
+#define VIDEODB_DETAILS_MUSICVIDEO_PREMIERED    VIDEODB_MAX_COLUMNS + 3
+#define VIDEODB_DETAILS_MUSICVIDEO_FILE         VIDEODB_MAX_COLUMNS + 4
+#define VIDEODB_DETAILS_MUSICVIDEO_PATH         VIDEODB_MAX_COLUMNS + 5
+#define VIDEODB_DETAILS_MUSICVIDEO_PLAYCOUNT    VIDEODB_MAX_COLUMNS + 6
+#define VIDEODB_DETAILS_MUSICVIDEO_LASTPLAYED   VIDEODB_MAX_COLUMNS + 7
+#define VIDEODB_DETAILS_MUSICVIDEO_DATEADDED    VIDEODB_MAX_COLUMNS + 8
+#define VIDEODB_DETAILS_MUSICVIDEO_RESUME_TIME  VIDEODB_MAX_COLUMNS + 9
+#define VIDEODB_DETAILS_MUSICVIDEO_TOTAL_TIME   VIDEODB_MAX_COLUMNS + 10
+#define VIDEODB_DETAILS_MUSICVIDEO_PLAYER_STATE VIDEODB_MAX_COLUMNS + 11
 
+#define VIDEODB_TYPE_UNUSED 0
 #define VIDEODB_TYPE_STRING 1
 #define VIDEODB_TYPE_INT 2
 #define VIDEODB_TYPE_FLOAT 3
@@ -151,6 +154,7 @@ enum VideoDbDetails
 
 typedef enum
 {
+  VIDEODB_CONTENT_UNKNOWN = 0,
   VIDEODB_CONTENT_MOVIES = 1,
   VIDEODB_CONTENT_TVSHOWS = 2,
   VIDEODB_CONTENT_MUSICVIDEOS = 3,
@@ -168,9 +172,9 @@ typedef enum // this enum MUST match the offset struct further down!! and make s
   VIDEODB_ID_VOTES = 4, // unused
   VIDEODB_ID_RATING_ID = 5,
   VIDEODB_ID_CREDITS = 6,
-  VIDEODB_ID_YEAR = 7,
+  VIDEODB_ID_YEAR = 7, // unused
   VIDEODB_ID_THUMBURL = 8,
-  VIDEODB_ID_IDENT = 9,
+  VIDEODB_ID_IDENT_ID = 9,
   VIDEODB_ID_SORTTITLE = 10,
   VIDEODB_ID_RUNTIME = 11,
   VIDEODB_ID_MPAA = 12,
@@ -198,12 +202,12 @@ const struct SDbTableOffsets
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strPlot) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strPlotOutline) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strTagLine) },
-  { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strVotes) },
+  { VIDEODB_TYPE_UNUSED, 0 }, // unused
   { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_iIdRating) },
   { VIDEODB_TYPE_STRINGARRAY, my_offsetof(CVideoInfoTag,m_writingCredits) },
-  { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_iYear) },
+  { VIDEODB_TYPE_UNUSED, 0 }, // unused
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strPictureURL.m_xml) },
-  { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strIMDBNumber) },
+  { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_iIdUniqueID) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strSortTitle) },
   { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_duration) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strMPAARating) },
@@ -235,10 +239,11 @@ typedef enum // this enum MUST match the offset struct further down!! and make s
   VIDEODB_ID_TV_ORIGINALTITLE = 9,
   VIDEODB_ID_TV_EPISODEGUIDE = 10,
   VIDEODB_ID_TV_FANART = 11,
-  VIDEODB_ID_TV_IDENT = 12,
+  VIDEODB_ID_TV_IDENT_ID = 12,
   VIDEODB_ID_TV_MPAA = 13,
   VIDEODB_ID_TV_STUDIOS = 14,
   VIDEODB_ID_TV_SORTTITLE = 15,
+  VIDEODB_ID_TV_TRAILER = 16,
   VIDEODB_ID_TV_MAX
 } VIDEODB_TV_IDS;
 
@@ -247,7 +252,7 @@ const struct SDbTableOffsets DbTvShowOffsets[] =
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strTitle) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strPlot) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strStatus) },
-  { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strVotes) },
+  { VIDEODB_TYPE_UNUSED, 0 }, //unused
   { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_iIdRating) },
   { VIDEODB_TYPE_DATE, my_offsetof(CVideoInfoTag,m_premiered) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strPictureURL.m_xml) },
@@ -256,13 +261,14 @@ const struct SDbTableOffsets DbTvShowOffsets[] =
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strOriginalTitle)},
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strEpisodeGuide)},
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_fanart.m_xml)},
-  { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strIMDBNumber)},
+  { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_iIdUniqueID)},
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strMPAARating)},
   { VIDEODB_TYPE_STRINGARRAY, my_offsetof(CVideoInfoTag,m_studio)},
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strSortTitle)},
+  { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strTrailer)}
 };
 
-// TODO is this comment valid for seasons? There is no offset structure or am I wrong?
+//! @todo is this comment valid for seasons? There is no offset structure or am I wrong?
 typedef enum // this enum MUST match the offset struct further down!! and make sure to keep min and max at -1 and sizeof(offsets)
 {
   VIDEODB_ID_SEASON_MIN = -1,
@@ -298,7 +304,7 @@ typedef enum // this enum MUST match the offset struct further down!! and make s
   VIDEODB_ID_EPISODE_PLAYCOUNT = 8, // unused - feel free to repurpose
   VIDEODB_ID_EPISODE_RUNTIME = 9,
   VIDEODB_ID_EPISODE_DIRECTOR = 10,
-  VIDEODB_ID_EPISODE_IDENT = 11,
+  VIDEODB_ID_EPISODE_PRODUCTIONCODE = 11,
   VIDEODB_ID_EPISODE_SEASON = 12,
   VIDEODB_ID_EPISODE_EPISODE = 13,
   VIDEODB_ID_EPISODE_ORIGINALTITLE = 14,
@@ -307,7 +313,7 @@ typedef enum // this enum MUST match the offset struct further down!! and make s
   VIDEODB_ID_EPISODE_BOOKMARK = 17,
   VIDEODB_ID_EPISODE_BASEPATH = 18,
   VIDEODB_ID_EPISODE_PARENTPATHID = 19,
-  VIDEODB_ID_EPISODE_UNIQUEID = 20,
+  VIDEODB_ID_EPISODE_IDENT_ID = 20,
   VIDEODB_ID_EPISODE_MAX
 } VIDEODB_EPISODE_IDS;
 
@@ -315,13 +321,13 @@ const struct SDbTableOffsets DbEpisodeOffsets[] =
 {
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strTitle) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strPlot) },
-  { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strVotes) },
+  { VIDEODB_TYPE_UNUSED, 0 }, // unused
   { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_iIdRating) },
   { VIDEODB_TYPE_STRINGARRAY, my_offsetof(CVideoInfoTag,m_writingCredits) },
   { VIDEODB_TYPE_DATE, my_offsetof(CVideoInfoTag,m_firstAired) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strPictureURL.m_xml) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strPictureURL.m_spoof) },
-  { VIDEODB_TYPE_COUNT, my_offsetof(CVideoInfoTag,m_playCount) }, // unused
+  { VIDEODB_TYPE_UNUSED, 0 }, // unused
   { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_duration) },
   { VIDEODB_TYPE_STRINGARRAY, my_offsetof(CVideoInfoTag,m_director) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strProductionCode) },
@@ -333,7 +339,7 @@ const struct SDbTableOffsets DbEpisodeOffsets[] =
   { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_iBookmarkId) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_basePath) },
   { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_parentPathID) },
-  { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strUniqueId) }
+  { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_iIdUniqueID) }
 };
 
 typedef enum // this enum MUST match the offset struct further down!! and make sure to keep min and max at -1 and sizeof(offsets)
@@ -346,7 +352,7 @@ typedef enum // this enum MUST match the offset struct further down!! and make s
   VIDEODB_ID_MUSICVIDEO_RUNTIME = 4,
   VIDEODB_ID_MUSICVIDEO_DIRECTOR = 5,
   VIDEODB_ID_MUSICVIDEO_STUDIOS = 6,
-  VIDEODB_ID_MUSICVIDEO_YEAR = 7,
+  VIDEODB_ID_MUSICVIDEO_YEAR = 7, // unused
   VIDEODB_ID_MUSICVIDEO_PLOT = 8,
   VIDEODB_ID_MUSICVIDEO_ALBUM = 9,
   VIDEODB_ID_MUSICVIDEO_ARTIST = 10,
@@ -362,11 +368,11 @@ const struct SDbTableOffsets DbMusicVideoOffsets[] =
   { VIDEODB_TYPE_STRING, my_offsetof(class CVideoInfoTag,m_strTitle) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strPictureURL.m_xml) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strPictureURL.m_spoof) },
-  { VIDEODB_TYPE_COUNT, my_offsetof(CVideoInfoTag,m_playCount) }, // unused
+  { VIDEODB_TYPE_UNUSED, 0 }, // unused
   { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_duration) },
   { VIDEODB_TYPE_STRINGARRAY, my_offsetof(CVideoInfoTag,m_director) },
   { VIDEODB_TYPE_STRINGARRAY, my_offsetof(CVideoInfoTag,m_studio) },
-  { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_iYear) },
+  { VIDEODB_TYPE_UNUSED, 0 }, // unused
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strPlot) },
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_strAlbum) },
   { VIDEODB_TYPE_STRINGARRAY, my_offsetof(CVideoInfoTag,m_artist) },
@@ -411,10 +417,10 @@ public:
   };
 
   CVideoDatabase(void);
-  virtual ~CVideoDatabase(void);
+  ~CVideoDatabase(void) override;
 
-  virtual bool Open();
-  virtual bool CommitTransaction();
+  bool Open() override;
+  bool CommitTransaction() override;
 
   int AddMovie(const std::string& strFilenameAndPath);
   int AddEpisode(int idShow, const std::string& strFilenameAndPath);
@@ -488,7 +494,8 @@ public:
   bool LoadVideoInfo(const std::string& strFilenameAndPath, CVideoInfoTag& details, int getDetails = VideoDbDetailsAll);
   bool GetMovieInfo(const std::string& strFilenameAndPath, CVideoInfoTag& details, int idMovie = -1, int getDetails = VideoDbDetailsAll);
   bool GetTvShowInfo(const std::string& strPath, CVideoInfoTag& details, int idTvShow = -1, CFileItem* item = NULL, int getDetails = VideoDbDetailsAll);
-  bool GetSeasonInfo(int idSeason, CVideoInfoTag& details);
+  bool GetSeasonInfo(int idSeason, CVideoInfoTag& details, bool allDetails = true);
+  bool GetEpisodeBasicInfo(const std::string& strFilenameAndPath, CVideoInfoTag& details, int idEpisode  = -1);
   bool GetEpisodeInfo(const std::string& strFilenameAndPath, CVideoInfoTag& details, int idEpisode = -1, int getDetails = VideoDbDetailsAll);
   bool GetMusicVideoInfo(const std::string& strFilenameAndPath, CVideoInfoTag& details, int idMVideo = -1, int getDetails = VideoDbDetailsAll);
   bool GetSetInfo(int idSet, CVideoInfoTag& details);
@@ -507,7 +514,7 @@ public:
   int SetDetailsForMovie(const std::string& strFilenameAndPath, CVideoInfoTag& details, const std::map<std::string, std::string> &artwork, int idMovie = -1);
   int SetDetailsForMovieSet(const CVideoInfoTag& details, const std::map<std::string, std::string> &artwork, int idSet = -1);
 
-  /*! \brief add a tvshow to the library, setting metdata detail
+  /*! \brief add a tvshow to the library, setting metadata detail
    First checks for whether this TV Show is already in the database (based on idTvShow, or via GetMatchingTvShow)
    and if present adds the paths to the show.  If not present, we add a new show and set the show metadata.
    \param paths a vector<string,string> list of the path(s) and parent path(s) for the show.
@@ -570,25 +577,41 @@ public:
   bool GetVideoSettings(const std::string &filePath, CVideoSettings &settings);
 
   /*! \brief Set video settings for the specified file path
-   \param filePath filepath to set the settings for
+   \param fileItem to set the settings for
    \sa GetVideoSettings
    */
-  void SetVideoSettings(const std::string &filePath, const CVideoSettings &settings);
+  void SetVideoSettings(const CFileItem &item, const CVideoSettings &settings);
+
+  /*! \brief Set video settings for the specified file path
+   \param fileId to set the settings for
+   \sa GetVideoSettings
+   */
+  void SetVideoSettings(int idFile, const CVideoSettings &settings);
 
   /**
-   * Erases settings for all files beginning with the specified path. Defaults 
-   * to an empty path, meaning all settings will be erased.
-   * @param path partial path, e.g. pvr://channels
+   * Erases video settings for file item
+   * @param fileitem
    */
-  void EraseVideoSettings(const std::string &path = "");
+  void EraseVideoSettings(const CFileItem &item);
 
-  bool GetStackTimes(const std::string &filePath, std::vector<int> &times);
-  void SetStackTimes(const std::string &filePath, const std::vector<int> &times);
+  /**
+   * Erases all video settings
+   */
+  void EraseAllVideoSettings();
+
+  /**
+   * Erases video settings for files starting with path
+   * @param path pattern
+   */
+  void EraseAllVideoSettings(std::string path);
+
+  bool GetStackTimes(const std::string &filePath, std::vector<uint64_t> &times);
+  void SetStackTimes(const std::string &filePath, const std::vector<uint64_t> &times);
 
   void GetBookMarksForFile(const std::string& strFilenameAndPath, VECBOOKMARKS& bookmarks, CBookmark::EType type = CBookmark::STANDARD, bool bAppend=false, long partNumber=0);
   void AddBookMarkToFile(const std::string& strFilenameAndPath, const CBookmark &bookmark, CBookmark::EType type = CBookmark::STANDARD);
   bool GetResumeBookMark(const std::string& strFilenameAndPath, CBookmark &bookmark);
-  void DeleteResumeBookMark(const std::string &strFilenameAndPath);
+  void DeleteResumeBookMark(const CFileItem& item);
   void ClearBookMarkOfFile(const std::string& strFilenameAndPath, CBookmark& bookmark, CBookmark::EType type = CBookmark::STANDARD);
   void ClearBookMarksOfFile(const std::string& strFilenameAndPath, CBookmark::EType type = CBookmark::STANDARD);
   void ClearBookMarksOfFile(int idFile, CBookmark::EType type = CBookmark::STANDARD);
@@ -598,6 +621,7 @@ public:
   bool GetResumePoint(CVideoInfoTag& tag);
   bool GetStreamDetails(CFileItem& item);
   bool GetStreamDetails(CVideoInfoTag& tag) const;
+  CVideoInfoTag GetDetailsByTypeAndId(VIDEODB_CONTENT_TYPE type, int id);
 
   // scraper settings
   void SetScraperForPath(const std::string& filePath, const ADDON::ScraperPtr& info, const VIDEO::SScanSettings& settings);
@@ -637,7 +661,7 @@ public:
    \return true if the scraper is in use, false otherwise.
    */
   bool ScraperInUse(const std::string &scraperID) const;
-  
+
   // scanning hashes and paths scanned
   bool SetPathHash(const std::string &path, const std::string &hash);
   bool GetPathHash(const std::string &path, std::string &hash);
@@ -651,7 +675,7 @@ public:
    */
   bool GetPathsLinkedToTvShow(int idShow, std::vector<std::string> &paths);
 
-  /*! \brief retrieve subpaths of a given path.  Assumes a heirarchical folder structure
+  /*! \brief retrieve subpaths of a given path.  Assumes a hierarchical folder structure
    \param basepath the root path to retrieve subpaths for
    \param subpaths the returned subpaths
    \return true if we successfully retrieve subpaths (may be zero), false on error
@@ -717,7 +741,7 @@ public:
   bool GetSeasonsNav(const std::string& strBaseDir, CFileItemList& items, int idActor=-1, int idDirector=-1, int idGenre=-1, int idYear=-1, int idShow=-1, bool getLinkedMovies = true);
   bool GetEpisodesNav(const std::string& strBaseDir, CFileItemList& items, int idGenre=-1, int idYear=-1, int idActor=-1, int idDirector=-1, int idShow=-1, int idSeason=-1, const SortDescription &sortDescription = SortDescription(), int getDetails = VideoDbDetailsNone);
   bool GetMusicVideosNav(const std::string& strBaseDir, CFileItemList& items, int idGenre=-1, int idYear=-1, int idArtist=-1, int idDirector=-1, int idStudio=-1, int idAlbum=-1, int idTag=-1, const SortDescription &sortDescription = SortDescription(), int getDetails = VideoDbDetailsNone);
-  
+
   bool GetRecentlyAddedMoviesNav(const std::string& strBaseDir, CFileItemList& items, unsigned int limit=0, int getDetails = VideoDbDetailsNone);
   bool GetRecentlyAddedEpisodesNav(const std::string& strBaseDir, CFileItemList& items, unsigned int limit=0, int getDetails = VideoDbDetailsNone);
   bool GetRecentlyAddedMusicVideosNav(const std::string& strBaseDir, CFileItemList& items, unsigned int limit=0, int getDetails = VideoDbDetailsNone);
@@ -758,7 +782,7 @@ public:
    \param strFileNameAndPath path to the file
    \param dateAdded datetime when the file was added to the filesystem/database
    */
-  void UpdateFileDateAdded(int idFile, const std::string& strFileNameAndPathh, const CDateTime& dateAdded = CDateTime());
+  void UpdateFileDateAdded(int idFile, const std::string& strFileNameAndPath, const CDateTime& dateAdded = CDateTime());
 
   void ExportToXML(const std::string &path, bool singleFile = true, bool images=false, bool actorThumbs=false, bool overwrite=false);
   void ExportActorThumbs(const std::string &path, const CVideoInfoTag& tag, bool singleFiles, bool overwrite=false);
@@ -773,7 +797,7 @@ public:
   bool GetSeasonsByWhere(const std::string& strBaseDir, const Filter &filter, CFileItemList& items, bool appendFullShowPath = true, const SortDescription &sortDescription = SortDescription());
   bool GetEpisodesByWhere(const std::string& strBaseDir, const Filter &filter, CFileItemList& items, bool appendFullShowPath = true, const SortDescription &sortDescription = SortDescription(), int getDetails = VideoDbDetailsNone);
   bool GetMusicVideosByWhere(const std::string &baseDir, const Filter &filter, CFileItemList& items, bool checkLocks = true, const SortDescription &sortDescription = SortDescription(), int getDetails = VideoDbDetailsNone);
-  
+
   // retrieve sorted and limited items
   bool GetSortedVideos(const MediaType &mediaType, const std::string& strBaseDir, const SortDescription &sortDescription, CFileItemList& items, const Filter &filter = Filter());
 
@@ -784,8 +808,12 @@ public:
   std::string GetItemById(const std::string &itemType, int id);
 
   // partymode
-  unsigned int GetMusicVideoIDs(const std::string& strWhere, std::vector<std::pair<int, int> > &songIDs);
-  bool GetRandomMusicVideo(CFileItem* item, int& idSong, const std::string& strWhere);
+  /*! \brief Gets music video IDs in random order that match the where clause
+  \param strWhere the SQL where clause to apply in the query
+  \param songIDs a vector of <2, id> pairs suited to party mode use
+  \return count of music video IDs found.
+  */
+  unsigned int GetRandomMusicVideoIDs(const std::string& strWhere, std::vector<std::pair<int, int> > &songIDs);
 
   static void VideoContentTypeToString(VIDEODB_CONTENT_TYPE type, std::string& out)
   {
@@ -812,9 +840,11 @@ public:
   void SetArtForItem(int mediaId, const MediaType &mediaType, const std::map<std::string, std::string> &art);
   bool GetArtForItem(int mediaId, const MediaType &mediaType, std::map<std::string, std::string> &art);
   std::string GetArtForItem(int mediaId, const MediaType &mediaType, const std::string &artType);
+  bool HasArtForItem(int mediaId, const MediaType &mediaType);
   bool RemoveArtForItem(int mediaId, const MediaType &mediaType, const std::string &artType);
   bool RemoveArtForItem(int mediaId, const MediaType &mediaType, const std::set<std::string> &artTypes);
   bool GetTvShowSeasons(int showId, std::map<int, int> &seasons);
+  bool GetTvShowNamedSeasons(int showId, std::map<int, std::string> &seasons);
   bool GetTvShowSeasonArt(int mediaId, std::map<int, std::map<std::string, std::string> > &seasonArt);
   bool GetArtTypes(const MediaType &mediaType, std::vector<std::string> &artTypes);
 
@@ -823,14 +853,14 @@ public:
   void RemoveTagFromItem(int idItem, int idTag, const std::string &type);
   void RemoveTagsFromItem(int idItem, const std::string &type);
 
-  virtual bool GetFilter(CDbUrl &videoUrl, Filter &filter, SortDescription &sorting);
+  bool GetFilter(CDbUrl &videoUrl, Filter &filter, SortDescription &sorting) override;
 
   /*! \brief Will check if the season exists and if that is not the case add it to the database.
   \param showID The id of the show in question.
   \param season The season number we want to add.
   \return The dbId of the season.
   */
-  int AddSeason(int showID, int season);
+  int AddSeason(int showID, int season, const std::string& name = "");
   int AddSet(const std::string& strSet, const std::string& strOverview = "");
   void ClearMovieSet(int idMovie);
   void SetMovieSet(int idMovie, int idSet);
@@ -856,6 +886,8 @@ protected:
   int AddToTable(const std::string& table, const std::string& firstField, const std::string& secondField, const std::string& value);
   int UpdateRatings(int mediaId, const char *mediaType, const RatingMap& values, const std::string& defaultRating);
   int AddRatings(int mediaId, const char *mediaType, const RatingMap& values, const std::string& defaultRating);
+  int UpdateUniqueIDs(int mediaId, const char *mediaType, const CVideoInfoTag& details);
+  int AddUniqueIDs(int mediaId, const char *mediaType, const CVideoInfoTag& details);
   int AddActor(const std::string& strActor, const std::string& thumbURL, const std::string &thumb = "");
 
   int AddTvShow();
@@ -894,6 +926,8 @@ protected:
   CVideoInfoTag GetDetailsForMovie(const dbiplus::sql_record* const record, int getDetails = VideoDbDetailsNone);
   CVideoInfoTag GetDetailsForTvShow(std::unique_ptr<dbiplus::Dataset> &pDS, int getDetails = VideoDbDetailsNone, CFileItem* item = NULL);
   CVideoInfoTag GetDetailsForTvShow(const dbiplus::sql_record* const record, int getDetails = VideoDbDetailsNone, CFileItem* item = NULL);
+  CVideoInfoTag GetBasicDetailsForEpisode(std::unique_ptr<dbiplus::Dataset> &pDS);
+  CVideoInfoTag GetBasicDetailsForEpisode(const dbiplus::sql_record* const record);
   CVideoInfoTag GetDetailsForEpisode(std::unique_ptr<dbiplus::Dataset> &pDS, int getDetails = VideoDbDetailsNone);
   CVideoInfoTag GetDetailsForEpisode(const dbiplus::sql_record* const record, int getDetails = VideoDbDetailsNone);
   CVideoInfoTag GetDetailsForMusicVideo(std::unique_ptr<dbiplus::Dataset> &pDS, int getDetails = VideoDbDetailsNone);
@@ -903,15 +937,16 @@ protected:
   void GetCast(int media_id, const std::string &media_type, std::vector<SActorInfo> &cast);
   void GetTags(int media_id, const std::string &media_type, std::vector<std::string> &tags);
   void GetRatings(int media_id, const std::string &media_type, RatingMap &ratings);
+  void GetUniqueIDs(int media_id, const std::string &media_type, CVideoInfoTag& details);
 
   void GetDetailsFromDB(std::unique_ptr<dbiplus::Dataset> &pDS, int min, int max, const SDbTableOffsets *offsets, CVideoInfoTag &details, int idxOffset = 2);
   void GetDetailsFromDB(const dbiplus::sql_record* const record, int min, int max, const SDbTableOffsets *offsets, CVideoInfoTag &details, int idxOffset = 2);
   std::string GetValueString(const CVideoInfoTag &details, int min, int max, const SDbTableOffsets *offsets) const;
 
 private:
-  virtual void CreateTables();
-  virtual void CreateAnalytics();
-  virtual void UpdateTables(int version);
+  void CreateTables() override;
+  void CreateAnalytics() override;
+  void UpdateTables(int version) override;
   void CreateLinkIndex(const char *table);
   void CreateForeignLinkIndex(const char *table, const char *foreignkey);
 
@@ -950,10 +985,10 @@ private:
    */
   int GetPlayCount(int iFileId);
 
-  virtual int GetMinSchemaVersion() const { return 75; };
-  virtual int GetSchemaVersion() const;
+  int GetMinSchemaVersion() const override { return 75; };
+  int GetSchemaVersion() const override;
   virtual int GetExportVersion() const { return 1; };
-  const char *GetBaseDBName() const { return "MyVideos"; };
+  const char *GetBaseDBName() const override { return "MyVideos"; };
 
   void ConstructPath(std::string& strDest, const std::string& strPath, const std::string& strFileName);
   void SplitPath(const std::string& strFileNameAndPath, std::string& strPath, std::string& strFileName);

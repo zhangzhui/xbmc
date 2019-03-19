@@ -1,41 +1,27 @@
 /*
- *      Copyright (C) 2012-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2012-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
+#include "PVRChannelGroupsContainer.h"
+
 #include "URL.h"
-#include "dialogs/GUIDialogOK.h"
 #include "guilib/LocalizeStrings.h"
-#include "utils/log.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
+#include "utils/log.h"
 
 #include "pvr/PVRManager.h"
-
-#include "PVRChannelGroupsContainer.h"
+#include "pvr/epg/EpgInfoTag.h"
 
 using namespace PVR;
 
 CPVRChannelGroupsContainer::CPVRChannelGroupsContainer(void) :
     m_groupsRadio(new CPVRChannelGroups(true)),
-    m_groupsTV(new CPVRChannelGroups(false)),
-    m_bUpdateChannelsOnly(false),
-    m_bIsUpdating(false)
+    m_groupsTV(new CPVRChannelGroups(false))
 {
 }
 
@@ -54,9 +40,8 @@ bool CPVRChannelGroupsContainer::Update(bool bChannelsOnly /* = false */)
   m_bUpdateChannelsOnly = bChannelsOnly;
   lock.Leave();
 
-  CLog::Log(LOGDEBUG, "CPVRChannelGroupsContainer - %s - updating %s", __FUNCTION__, bChannelsOnly ? "channels" : "channel groups");
-  bool bReturn = m_groupsRadio->Update(bChannelsOnly) &&
-       m_groupsTV->Update(bChannelsOnly);
+  CLog::LogFC(LOGDEBUG, LOGPVR, "Updating %s", bChannelsOnly ? "channels" : "channel groups");
+  bool bReturn = m_groupsTV->Update(bChannelsOnly) && m_groupsRadio->Update(bChannelsOnly);
 
   lock.Enter();
   m_bIsUpdating = false;
@@ -68,15 +53,20 @@ bool CPVRChannelGroupsContainer::Update(bool bChannelsOnly /* = false */)
 bool CPVRChannelGroupsContainer::Load(void)
 {
   Unload();
+  m_bLoaded = m_groupsTV->Load() && m_groupsRadio->Load();
+  return m_bLoaded;
+}
 
-  return m_groupsRadio->Load() &&
-         m_groupsTV->Load();
+bool CPVRChannelGroupsContainer::Loaded(void) const
+{
+  return m_bLoaded;
 }
 
 void CPVRChannelGroupsContainer::Unload(void)
 {
   m_groupsRadio->Clear();
   m_groupsTV->Clear();
+  m_bLoaded = false;
 }
 
 CPVRChannelGroups *CPVRChannelGroupsContainer::Get(bool bRadio) const
@@ -114,6 +104,15 @@ CPVRChannelPtr CPVRChannelGroupsContainer::GetChannelByEpgId(int iEpgId) const
     channel = m_groupsRadio->GetGroupAll()->GetByChannelEpgID(iEpgId);
 
   return channel;
+}
+
+std::shared_ptr<CPVRChannel> CPVRChannelGroupsContainer::GetChannelForEpgTag(const std::shared_ptr<CPVREpgInfoTag>& epgTag) const
+{
+  if (!epgTag)
+    return {};
+
+  const CPVRChannelGroups* groups = epgTag->IsRadio() ? m_groupsRadio : m_groupsTV;
+  return groups->GetGroupAll()->GetByUniqueID(epgTag->UniqueChannelID(), epgTag->ClientID());
 }
 
 bool CPVRChannelGroupsContainer::GetGroupsDirectory(CFileItemList *results, bool bRadio) const
@@ -158,13 +157,13 @@ bool CPVRChannelGroupsContainer::GetDirectory(const std::string& strPath, CFileI
     /* all tv channels */
     item.reset(new CFileItem(strBase + "/tv/", true));
     item->SetLabel(g_localizeStrings.Get(19020));
-    item->SetLabelPreformated(true);
+    item->SetLabelPreformatted(true);
     results.Add(item);
 
     /* all radio channels */
     item.reset(new CFileItem(strBase + "/radio/", true));
     item->SetLabel(g_localizeStrings.Get(19021));
-    item->SetLabelPreformated(true);
+    item->SetLabelPreformatted(true);
     results.Add(item);
 
     return true;
@@ -181,31 +180,85 @@ bool CPVRChannelGroupsContainer::GetDirectory(const std::string& strPath, CFileI
   {
     std::string strGroupName(fileName.substr(12));
     URIUtils::RemoveSlashAtEnd(strGroupName);
-    CPVRChannelGroupPtr group = GetTV()->GetByName(strGroupName);
-    if (!group)
+
+    CPVRChannelGroupPtr group;
+    bool bShowHiddenChannels = StringUtils::EndsWithNoCase(fileName, ".hidden");
+    if (strGroupName == "*" || bShowHiddenChannels) // all channels
       group = GetGroupAllTV();
+    else
+      group = GetTV()->GetByName(strGroupName);
+
     if (group)
-      group->GetMembers(results, !StringUtils::EndsWithNoCase(fileName, ".hidden"));
+    {
+      group->GetMembers(results, bShowHiddenChannels ? CPVRChannelGroup::Include::ONLY_HIDDEN : CPVRChannelGroup::Include::ONLY_VISIBLE);
+    }
+    else
+    {
+      CLog::LogF(LOGERROR, "Unable to obtain members of channel group '%s'", strGroupName.c_str());
+      return false;
+    }
+
+    FilterDirectory(url, results);
     return true;
   }
   else if (StringUtils::StartsWith(fileName, "channels/radio/"))
   {
     std::string strGroupName(fileName.substr(15));
     URIUtils::RemoveSlashAtEnd(strGroupName);
-    CPVRChannelGroupPtr group = GetRadio()->GetByName(strGroupName);
-    if (!group)
+
+    CPVRChannelGroupPtr group;
+    bool bShowHiddenChannels = StringUtils::EndsWithNoCase(fileName, ".hidden");
+    if (strGroupName == "*" || bShowHiddenChannels) // all channels
       group = GetGroupAllRadio();
+    else
+      group = GetRadio()->GetByName(strGroupName);
+
     if (group)
-      group->GetMembers(results, !StringUtils::EndsWithNoCase(fileName, ".hidden"));
+    {
+      group->GetMembers(results, bShowHiddenChannels ? CPVRChannelGroup::Include::ONLY_HIDDEN : CPVRChannelGroup::Include::ONLY_VISIBLE);
+    }
+    else
+    {
+      CLog::LogF(LOGERROR, "Unable to obtain members of channel group '%s'", strGroupName.c_str());
+      return false;
+    }
+
+    FilterDirectory(url, results);
     return true;
   }
 
   return false;
 }
 
-int CPVRChannelGroupsContainer::GetNumChannelsFromAll() const
+bool CPVRChannelGroupsContainer::FilterDirectory(const CURL &url, CFileItemList &results) const
 {
-  return GetGroupAllTV()->Size() + GetGroupAllRadio()->Size();
+  if (!results.IsEmpty())
+  {
+    if (url.HasOption("view"))
+    {
+      const std::string view(url.GetOption("view"));
+      if (view == "lastplayed")
+      {
+        // remove channels never played so far
+        for (int i = 0; i < results.Size(); ++i)
+        {
+          const CPVRChannelPtr channel(results.Get(i)->GetPVRChannelInfoTag());
+          time_t lastWatched = channel->LastWatched();
+          if (!lastWatched)
+          {
+            results.Remove(i);
+            --i;
+          }
+        }
+      }
+      else
+      {
+        CLog::LogF(LOGERROR, "Unsupported value '%s' for channel list URL parameter 'view'", view.c_str());
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 CPVRChannelGroupPtr CPVRChannelGroupsContainer::GetSelectedGroup(bool bRadio) const
@@ -230,7 +283,7 @@ CPVRChannelPtr CPVRChannelGroupsContainer::GetByUniqueID(int iUniqueChannelId, i
 
 void CPVRChannelGroupsContainer::SearchMissingChannelIcons(void) const
 {
-  CLog::Log(LOGINFO, "PVRChannelGroupsContainer - %s - starting channel icon search", __FUNCTION__);
+  CLog::Log(LOGINFO, "Starting PVR channel icon search");
 
   CPVRChannelGroupPtr channelgrouptv  = GetGroupAllTV();
   CPVRChannelGroupPtr channelgroupradio = GetGroupAllRadio();
@@ -247,9 +300,7 @@ CFileItemPtr CPVRChannelGroupsContainer::GetLastPlayedChannel(void) const
   CFileItemPtr channelRadio = m_groupsRadio->GetGroupAll()->GetLastPlayedChannel();
 
   if (!channelTV ||
-      !channelTV->HasPVRChannelInfoTag() ||
-      (channelRadio && channelRadio->HasPVRChannelInfoTag() &&
-       channelRadio->GetPVRChannelInfoTag()->LastWatched() > channelTV->GetPVRChannelInfoTag()->LastWatched()))
+      (channelRadio && channelRadio->GetPVRChannelInfoTag()->LastWatched() > channelTV->GetPVRChannelInfoTag()->LastWatched()))
      return channelRadio;
 
   return channelTV;
@@ -268,8 +319,7 @@ CPVRChannelGroupPtr CPVRChannelGroupsContainer::GetLastPlayedGroup(int iChannelI
 
 bool CPVRChannelGroupsContainer::CreateChannelEpgs(void)
 {
-  return m_groupsRadio->CreateChannelEpgs() &&
-         m_groupsTV->CreateChannelEpgs();
+  return m_groupsTV->CreateChannelEpgs() && m_groupsRadio->CreateChannelEpgs();
 }
 
 CPVRChannelGroupPtr CPVRChannelGroupsContainer::GetPreviousPlayedGroup(void)
@@ -278,7 +328,7 @@ CPVRChannelGroupPtr CPVRChannelGroupsContainer::GetPreviousPlayedGroup(void)
   return m_lastPlayedGroups[0];
 }
 
-void CPVRChannelGroupsContainer::SetLastPlayedGroup(CPVRChannelGroupPtr group)
+void CPVRChannelGroupsContainer::SetLastPlayedGroup(const CPVRChannelGroupPtr &group)
 {
   CSingleLock lock(m_critSection);
   m_lastPlayedGroups[0] = m_lastPlayedGroups[1];
