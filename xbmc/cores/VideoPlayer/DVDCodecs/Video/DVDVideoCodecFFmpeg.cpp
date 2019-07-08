@@ -24,19 +24,19 @@
 #include <memory>
 
 extern "C" {
-#include "libavutil/opt.h"
-#include "libavutil/mastering_display_metadata.h"
-#include "libavfilter/avfilter.h"
-#include "libavfilter/buffersink.h"
-#include "libavfilter/buffersrc.h"
-#include "libavutil/pixdesc.h"
+#include <libavutil/opt.h>
+#include <libavutil/mastering_display_metadata.h>
+#include <libavfilter/avfilter.h>
+#include <libavfilter/buffersink.h>
+#include <libavfilter/buffersrc.h>
+#include <libavutil/pixdesc.h>
 }
 
 #ifndef TARGET_POSIX
 #define RINT(x) ((x) >= 0 ? ((int)((x) + 0.5)) : ((int)((x) - 0.5)))
 #else
 #include <math.h>
-#include "platform/linux/XTimeUtils.h"
+#include "platform/posix/XTimeUtils.h"
 #define RINT lrint
 #endif
 

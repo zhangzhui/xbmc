@@ -48,16 +48,12 @@ using namespace winrt::Windows::System::Profile;
 #endif
 #if defined(TARGET_DARWIN)
 #include "platform/darwin/DarwinUtils.h"
-#include "platform/darwin/osx/CocoaInterface.h"
 #endif
 #include "powermanagement/PowerManager.h"
 #include "utils/StringUtils.h"
 #include "utils/XMLUtils.h"
 #if defined(TARGET_ANDROID)
 #include <androidjni/Build.h>
-#if defined(HAS_LIBAMCODEC)
-#include "utils/AMLUtils.h"
-#endif
 #endif
 
 /* Platform identification */
@@ -520,6 +516,11 @@ std::string CSysInfo::GetCPURevision()
 std::string CSysInfo::GetCPUSerial()
 {
   return "Serial: " + g_cpuInfo.getCPUSerial();
+}
+
+int CSysInfo::GetCPUCount()
+{
+  return g_cpuInfo.getCPUCount();
 }
 
 std::string CSysInfo::GetKernelName(bool emptyIfUnknown /*= false*/)

@@ -14,11 +14,13 @@
 #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererGBM.h"
 #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGLES.h"
 #include "cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.h"
+#include "cores/VideoPlayer/Process/gbm/ProcessInfoGBM.h"
 #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
 #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
 
 #include "OptionalsReg.h"
-#include "platform/linux/XTimeUtils.h"
+#include "platform/posix/XTimeUtils.h"
+#include "rendering/gles/ScreenshotSurfaceGLES.h"
 #include "utils/log.h"
 #include "WinSystemGbmGLESContext.h"
 
@@ -65,6 +67,9 @@ bool CWinSystemGbmGLESContext::InitWindowSystem()
   CRendererDRMPRIMEGLES::Register();
   CRendererDRMPRIME::Register();
   CDVDVideoCodecDRMPRIME::Register();
+  VIDEOPLAYER::CProcessInfoGBM::Register();
+
+  CScreenshotSurfaceGLES::Register();
 
   return true;
 }

@@ -8,21 +8,22 @@
 
 #include "PVRChannelGroups.h"
 
-#include <algorithm>
-
-#include "FileItem.h"
 #include "ServiceBroker.h"
-#include "URL.h"
+#include "pvr/PVRDatabase.h"
+#include "pvr/PVRManager.h"
+#include "pvr/addons/PVRClients.h"
+#include "pvr/channels/PVRChannelGroupInternal.h"
+#include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
 
-#include "pvr/PVRDatabase.h"
-#include "pvr/PVRManager.h"
-#include "pvr/addons/PVRClients.h"
-#include "pvr/channels/PVRChannelGroupInternal.h"
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace PVR;
 
@@ -122,14 +123,14 @@ void CPVRChannelGroups::SortGroups()
   }
 }
 
-CFileItemPtr CPVRChannelGroups::GetByPath(const std::string &strInPath) const
+std::shared_ptr<CPVRChannel> CPVRChannelGroups::GetByPath(const std::string& strInPath) const
 {
   std::string strPath = strInPath;
   URIUtils::RemoveSlashAtEnd(strPath);
   std::string strCheckPath;
 
   CSingleLock lock(m_critSection);
-  for (const auto& group: m_groups)
+  for (const auto& group : m_groups)
   {
     // check if the path matches
     strCheckPath = group->GetPath();
@@ -141,13 +142,13 @@ CFileItemPtr CPVRChannelGroups::GetByPath(const std::string &strInPath) const
       {
         const CPVRChannelPtr channel = group->GetByUniqueID(atoi(split[1].c_str()), CServiceBroker::GetPVRManager().Clients()->GetClientId(split[0]));
         if (channel)
-          return CFileItemPtr(new CFileItem(channel));
+          return channel;
       }
     }
   }
 
   // no match
-  return CFileItemPtr(new CFileItem());
+  return {};
 }
 
 CPVRChannelGroupPtr CPVRChannelGroups::GetById(int iGroupId) const
@@ -174,6 +175,22 @@ std::vector<CPVRChannelGroupPtr> CPVRChannelGroups::GetGroupsByChannel(const CPV
       groups.push_back(group);
   }
   return groups;
+}
+
+std::shared_ptr<CPVRChannelGroup> CPVRChannelGroups::GetGroupByPath(const std::string& strInPath) const
+{
+  // group paths returned by CPVRChannelGroup::GetPath() are always terminated by a "/"
+  std::string strPath = strInPath;
+  if (!strPath.empty() && strPath[strPath.size() - 1] != '/')
+    strPath += '/';
+
+  CSingleLock lock(m_critSection);
+  for (const auto& group : m_groups)
+  {
+    if (group->GetPath() == strPath)
+      return group;
+  }
+  return {};
 }
 
 CPVRChannelGroupPtr CPVRChannelGroups::GetByName(const std::string &strName) const
@@ -234,6 +251,13 @@ bool CPVRChannelGroups::Update(bool bChannelsOnly /* = false */)
       std::vector<std::shared_ptr<CPVRChannel>> channelsToRemove;
       bReturn = group->Update(channelsToRemove) && bReturn;
       RemoveFromAllGroups(channelsToRemove);
+    }
+
+    if (bReturn &&
+        group->IsInternalGroup() &&
+        CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_bPVRChannelIconsAutoScan)
+    {
+      CServiceBroker::GetPVRManager().TriggerSearchMissingChannelIcons(group);
     }
   }
 
@@ -396,27 +420,6 @@ std::vector<CPVRChannelGroupPtr> CPVRChannelGroups::GetMembers(bool bExcludeHidd
   return groups;
 }
 
-int CPVRChannelGroups::GetGroupList(CFileItemList* results, bool bExcludeHidden /* = false */) const
-{
-  int iReturn(0);
-
-  CSingleLock lock(m_critSection);
-  for (std::vector<CPVRChannelGroupPtr>::const_iterator it = m_groups.begin(); it != m_groups.end(); ++it)
-  {
-    // exclude hidden groups if desired
-    if (bExcludeHidden && (*it)->IsHidden())
-      continue;
-
-    CFileItemPtr group(new CFileItem((*it)->GetPath(), true));
-    group->m_strTitle = (*it)->GroupName();
-    group->SetLabel((*it)->GroupName());
-    results->Add(group);
-    ++iReturn;
-  }
-
-  return iReturn;
-}
-
 CPVRChannelGroupPtr CPVRChannelGroups::GetPreviousGroup(const CPVRChannelGroup &group) const
 {
   bool bReturnNext(false);
@@ -500,9 +503,8 @@ bool CPVRChannelGroups::AddGroup(const std::string &strName)
     if (!group)
     {
       // create a new group
-      group = CPVRChannelGroupPtr(new CPVRChannelGroup());
-      group->SetRadio(m_bRadio);
-      group->SetGroupName(strName);
+      group.reset(new CPVRChannelGroup(m_bRadio, CPVRChannelGroup::INVALID_GROUP_ID, strName, GetGroupAll()));
+
       m_groups.push_back(group);
       bPersist = true;
     }

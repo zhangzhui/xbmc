@@ -8,21 +8,20 @@
 
 #include "PVRChannelGroupInternal.h"
 
-#include <utility>
-
 #include "ServiceBroker.h"
 #include "guilib/LocalizeStrings.h"
 #include "messaging/helpers/DialogOKHelper.h"
-#include "settings/AdvancedSettings.h"
-#include "settings/Settings.h"
-#include "settings/SettingsComponent.h"
-#include "utils/Variant.h"
-#include "utils/log.h"
-
 #include "pvr/PVRDatabase.h"
 #include "pvr/PVRManager.h"
 #include "pvr/addons/PVRClients.h"
+#include "pvr/channels/PVRChannel.h"
 #include "pvr/epg/EpgContainer.h"
+#include "utils/Variant.h"
+#include "utils/log.h"
+
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace PVR;
 using namespace KODI::MESSAGING;
@@ -244,15 +243,19 @@ bool CPVRChannelGroupInternal::AddAndUpdateChannels(const CPVRChannelGroup &chan
       if (existingChannel.channel->UpdateFromClient(it->second.channel))
       {
         bReturn = true;
-        CLog::LogFC(LOGDEBUG, LOGPVR, "Updated %s channel '%s' from PVR client", m_bRadio ? "radio" : "TV", it->second.channel->ChannelName().c_str());
+        CLog::LogFC(LOGDEBUG, LOGPVR, "Updated {} channel '{}' from PVR client", m_bRadio ? "radio" : "TV", it->second.channel->ChannelName());
       }
     }
     else
     {
       /* new channel */
       UpdateFromClient(it->second.channel, bUseBackendChannelNumbers ? it->second.channel->ClientChannelNumber() : CPVRChannelNumber());
+      if (it->second.channel->CreateEPG())
+      {
+         CLog::LogFC(LOGDEBUG, LOGPVR, "Created EPG for {} channel '{}' from PVR client", m_bRadio ? "radio" : "TV", it->second.channel->ChannelName());
+      }
       bReturn = true;
-      CLog::LogFC(LOGDEBUG, LOGPVR,"Added %s channel '%s' from PVR client", m_bRadio ? "radio" : "TV", it->second.channel->ChannelName().c_str());
+      CLog::LogFC(LOGDEBUG, LOGPVR, "Added {} channel '{}' from PVR client", m_bRadio ? "radio" : "TV", it->second.channel->ChannelName());
     }
   }
 
@@ -284,20 +287,13 @@ std::vector<CPVRChannelPtr> CPVRChannelGroupInternal::RemoveDeletedChannels(cons
 
 bool CPVRChannelGroupInternal::UpdateGroupEntries(const CPVRChannelGroup& channels, std::vector<std::shared_ptr<CPVRChannel>>& channelsToRemove)
 {
-  bool bReturn(false);
-
   if (CPVRChannelGroup::UpdateGroupEntries(channels, channelsToRemove))
   {
-    /* try to find channel icons */
-    if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_bPVRChannelIconsAutoScan)
-      SearchAndSetChannelIcons();
-
     Persist();
-
-    bReturn = true;
+    return true;
   }
 
-  return bReturn;
+  return false;
 }
 
 void CPVRChannelGroupInternal::CreateChannelEpg(const std::shared_ptr<CPVRChannel>& channel)

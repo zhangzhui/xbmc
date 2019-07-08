@@ -100,9 +100,6 @@
 #include "pictures/GUIDialogPictureInfo.h"
 #include "addons/settings/GUIDialogAddonSettings.h"
 #include "addons/GUIDialogAddonInfo.h"
-#ifdef HAS_LINUX_NETWORK
-#include "network/GUIDialogAccessPoints.h"
-#endif
 
 /* PVR related include Files */
 #include "pvr/PVRManager.h"
@@ -227,9 +224,6 @@ void CGUIWindowManager::CreateWindows()
   Add(new CGUIDialogPictureInfo);
   Add(new CGUIDialogAddonInfo);
   Add(new CGUIDialogAddonSettings);
-#ifdef HAS_LINUX_NETWORK
-  Add(new CGUIDialogAccessPoints);
-#endif
 
   Add(new CGUIDialogLockSettings);
 
@@ -355,7 +349,6 @@ bool CGUIWindowManager::DestroyWindows()
     DestroyWindow(WINDOW_DIALOG_PICTURE_INFO);
     DestroyWindow(WINDOW_DIALOG_ADDON_INFO);
     DestroyWindow(WINDOW_DIALOG_ADDON_SETTINGS);
-    DestroyWindow(WINDOW_DIALOG_ACCESS_POINTS);
     DestroyWindow(WINDOW_DIALOG_SLIDER);
     DestroyWindow(WINDOW_DIALOG_MEDIA_FILTER);
     DestroyWindow(WINDOW_DIALOG_SUBTITLES);
@@ -1289,8 +1282,11 @@ CGUIWindow* CGUIWindowManager::GetWindow(int id) const
 
 bool CGUIWindowManager::ProcessRenderLoop(bool renderOnly)
 {
+  bool renderGui = true;
+
   if (g_application.IsCurrentThread() && m_pCallback)
   {
+    renderGui = m_pCallback->GetRenderGUI();
     m_iNested++;
     if (!renderOnly)
       m_pCallback->Process();
@@ -1298,7 +1294,7 @@ bool CGUIWindowManager::ProcessRenderLoop(bool renderOnly)
     m_pCallback->Render();
     m_iNested--;
   }
-  if (g_application.m_bStop)
+  if (g_application.m_bStop || !renderGui)
     return false;
   else
     return true;
@@ -1670,8 +1666,10 @@ void CGUIWindowManager::CloseWindowSync(CGUIWindow *window, int nextWindowID /*=
   }
 
   window->Close(false, nextWindowID);
-  while (window->IsAnimating(ANIM_TYPE_WINDOW_CLOSE))
-    ProcessRenderLoop(true);
+
+  bool renderLoopProcessed = true;
+  while (window->IsAnimating(ANIM_TYPE_WINDOW_CLOSE) && renderLoopProcessed)
+    renderLoopProcessed = ProcessRenderLoop(true);
 }
 
 #ifdef _DEBUG

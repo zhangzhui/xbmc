@@ -26,6 +26,7 @@
 #include "cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGL.h"
 #include "guilib/DispResource.h"
 #include "guilib/GUIWindowManager.h"
+#include "rendering/gl/ScreenshotSurfaceGL.h"
 #include "platform/darwin/osx/powermanagement/CocoaPowerSyscall.h"
 #include "settings/DisplaySettings.h"
 #include "settings/Settings.h"
@@ -40,6 +41,7 @@
 #include "platform/darwin/osx/CocoaInterface.h"
 #include "platform/darwin/DictionaryUtils.h"
 #include "platform/darwin/DarwinUtils.h"
+#include "windowing/osx/CocoaDPMSSupport.h"
 
 #include <cstdlib>
 #include <signal.h>
@@ -655,6 +657,7 @@ CWinSystemOSX::CWinSystemOSX() : CWinSystemBase(), m_lostDeviceTimer(this)
   AE::CAESinkFactory::ClearSinks();
   CAESinkDARWINOSX::Register();
   CCocoaPowerSyscall::Register();
+  m_dpms = std::make_shared<CCocoaDPMSSupport>();
 }
 
 CWinSystemOSX::~CWinSystemOSX()
@@ -833,6 +836,8 @@ bool CWinSystemOSX::CreateNewWindow(const std::string& name, bool fullScreen, RE
   VIDEOPLAYER::CProcessInfoOSX::Register();
   RETRO::CRPProcessInfoOSX::Register();
   RETRO::CRPProcessInfoOSX::RegisterRendererFactory(new RETRO::CRendererFactoryOpenGL);
+  CScreenshotSurfaceGL::Register();
+
   return true;
 }
 

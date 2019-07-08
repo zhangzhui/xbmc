@@ -6,15 +6,13 @@
  *  See LICENSES/README.md for more information.
  */
 
-#if defined(TARGET_POSIX)
-
 #include "PosixDirectory.h"
 #include "utils/AliasShortcutUtils.h"
 #include "utils/CharsetConverter.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "FileItem.h"
-#include "platform/linux/XTimeUtils.h"
+#include "platform/posix/XTimeUtils.h"
 #include "URL.h"
 
 #include <dirent.h>
@@ -206,4 +204,3 @@ bool CPosixDirectory::Exists(const CURL& url)
     return false;
   return S_ISDIR(buffer.st_mode) ? true : false;
 }
-#endif

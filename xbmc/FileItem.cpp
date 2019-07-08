@@ -35,7 +35,7 @@
 #include "pvr/PVRManager.h"
 #include "pvr/channels/PVRChannelGroupsContainer.h"
 #include "pvr/channels/PVRChannel.h"
-#include "pvr/epg/Epg.h"
+#include "pvr/epg/EpgInfoTag.h"
 #include "pvr/recordings/PVRRecording.h"
 #include "pvr/timers/PVRTimerInfoTag.h"
 #include "video/Bookmark.h"
@@ -1118,7 +1118,8 @@ bool CFileItem::IsDVDFile(bool bVobs /*= true*/, bool bIfos /*= true*/) const
 bool CFileItem::IsBDFile() const
 {
   std::string strFileName = URIUtils::GetFileName(m_strPath);
-  return (StringUtils::EqualsNoCase(strFileName, "index.bdmv") || StringUtils::EqualsNoCase(strFileName, "MovieObject.bdmv"));
+  return (StringUtils::EqualsNoCase(strFileName, "index.bdmv") || StringUtils::EqualsNoCase(strFileName, "MovieObject.bdmv")
+          || StringUtils::EqualsNoCase(strFileName, "INDEX.BDM") || StringUtils::EqualsNoCase(strFileName, "MOVIEOBJ.BDM"));
 }
 
 bool CFileItem::IsRAR() const
@@ -1726,6 +1727,14 @@ std::string CFileItem::GetOpticalMediaPath() const
     return path;
 
   path = URIUtils::AddFileToFolder(GetPath(), "BDMV", "index.bdmv");
+  if (CFile::Exists(path))
+    return path;
+
+  path = URIUtils::AddFileToFolder(GetPath(), "INDEX.BDM");
+  if (CFile::Exists(path))
+    return path;
+
+  path = URIUtils::AddFileToFolder(GetPath(), "BDMV", "INDEX.BDM");
   if (CFile::Exists(path))
     return path;
 #endif
@@ -3193,10 +3202,11 @@ std::string CFileItem::GetMovieName(bool bUseFolderNames /* = false */) const
       return title;
   }
 
-  std::string strMovieName = GetBaseMoviePath(bUseFolderNames);
-
-  if (URIUtils::IsStack(strMovieName))
-    strMovieName = CStackDirectory::GetStackedTitlePath(strMovieName);
+  std::string strMovieName;
+  if (URIUtils::IsStack(m_strPath))
+    strMovieName = CStackDirectory::GetStackedTitlePath(m_strPath);
+  else
+    strMovieName = GetBaseMoviePath(bUseFolderNames);
 
   URIUtils::RemoveSlashAtEnd(strMovieName);
 
@@ -3352,7 +3362,7 @@ bool CFileItem::LoadMusicTag()
   CLog::Log(LOGDEBUG, "%s: loading tag information for file: %s", __FUNCTION__, m_strPath.c_str());
   CMusicInfoTagLoaderFactory factory;
   std::unique_ptr<IMusicInfoTagLoader> pLoader (factory.CreateLoader(*this));
-  if (pLoader.get() != NULL)
+  if (pLoader)
   {
     if (pLoader->Load(m_strPath, *GetMusicInfoTag()))
       return true;

@@ -24,7 +24,7 @@
 #endif
 
 #ifdef TARGET_POSIX
-#include "platform/linux/ConvUtils.h"
+#include "platform/posix/ConvUtils.h"
 #endif
 
 using namespace dbiplus;
@@ -684,12 +684,6 @@ void CDatabase::RollbackTransaction()
   {
     CLog::Log(LOGERROR, "database:rollbacktransaction failed");
   }
-}
-
-bool CDatabase::InTransaction()
-{
-  if (NULL != m_pDB.get()) return false;
-  return m_pDB->in_transaction();
 }
 
 bool CDatabase::CreateDatabase()

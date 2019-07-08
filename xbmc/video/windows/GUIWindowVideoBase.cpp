@@ -679,6 +679,9 @@ bool CGUIWindowVideoBase::OnFileAction(int iItem, int action, std::string player
     if (!OnPlayStackPart(iItem))
       return false;
     break;
+  case SELECT_ACTION_QUEUE:
+    OnQueueItem(iItem);
+    return true;
   case SELECT_ACTION_PLAY:
   default:
     break;
@@ -699,6 +702,11 @@ bool CGUIWindowVideoBase::OnItemInfo(int iItem)
 
   if (!m_vecItems->IsPlugin() && (item->IsPlugin() || item->IsScript()))
     return CGUIDialogAddonInfo::ShowForItem(item);
+
+  if (item->m_bIsFolder &&
+      item->IsVideoDb() &&
+      StringUtils::StartsWith(item->GetPath(), "videodb://movies/sets/"))
+    return ShowIMDB(item, nullptr, true);
 
   ADDON::ScraperPtr scraper;
   if (!m_vecItems->IsPlugin() && !m_vecItems->IsRSS() && !m_vecItems->IsLiveTV())

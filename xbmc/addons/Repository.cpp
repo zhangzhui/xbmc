@@ -38,7 +38,6 @@ using namespace KODI::MESSAGING;
 using KODI::UTILITY::CDigest;
 using KODI::UTILITY::TypedDigest;
 
-using KODI::MESSAGING::HELPERS::DialogResponse;
 
 CRepository::ResolveResult CRepository::ResolvePathAndHash(const AddonPtr& addon) const
 {
@@ -206,7 +205,6 @@ bool CRepository::FetchChecksum(const std::string& url, std::string& checksum) n
 bool CRepository::FetchIndex(const DirInfo& repo, std::string const& digest, VECADDONS& addons) noexcept
 {
   XFILE::CCurlFile http;
-  http.SetAcceptEncoding("gzip");
 
   std::string response;
   if (!http.Get(repo.info, response))

@@ -9,13 +9,13 @@
 #include "cores/AudioEngine/AESinkFactory.h"
 #include "cores/AudioEngine/Sinks/AESinkDARWINOSX.h"
 #include "cores/AudioEngine/Utils/AERingBuffer.h"
-#include "cores/AudioEngine/Sinks/osx/CoreAudioHelpers.h"
+#include "cores/AudioEngine/Sinks/darwin/CoreAudioHelpers.h"
 #include "cores/AudioEngine/Sinks/osx/CoreAudioHardware.h"
 #include "cores/AudioEngine/Sinks/osx/AEDeviceEnumerationOSX.h"
 #include "utils/log.h"
 #include "utils/StringUtils.h"
 #include "utils/TimeUtils.h"
-#include "platform/linux/XMemUtils.h"
+#include "utils/MemUtils.h"
 #include "ServiceBroker.h"
 
 

@@ -18,6 +18,7 @@
 #include "platform/win32/CharsetConverter.h"
 #include "platform/win32/input/IRServerSuite.h"
 #include "platform/win32/powermanagement/Win32PowerSyscall.h"
+#include "rendering/dx/ScreenshotSurfaceWindows.h"
 #include "resource.h"
 #include "ServiceBroker.h"
 #include "settings/AdvancedSettings.h"
@@ -29,6 +30,7 @@
 #include "utils/SystemInfo.h"
 #include "VideoSyncD3D.h"
 #include "windowing/GraphicContext.h"
+#include "windowing/windows/Win32DPMSSupport.h"
 #include "WinEventsWin32.h"
 
 #include <algorithm>
@@ -68,11 +70,14 @@ CWinSystemWin32::CWinSystemWin32()
   CAESinkDirectSound::Register();
   CAESinkWASAPI::Register();
   CWin32PowerSyscall::Register();
+  CScreenshotSurfaceWindows::Register();
+
   if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_bScanIRServer)
   {
     m_irss.reset(new CIRServerSuite());
     m_irss->Initialize();
   }
+  m_dpms = std::make_shared<CWin32DPMSSupport>();
 }
 
 CWinSystemWin32::~CWinSystemWin32()
