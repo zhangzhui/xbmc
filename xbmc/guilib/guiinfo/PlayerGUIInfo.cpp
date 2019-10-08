@@ -8,28 +8,27 @@
 
 #include "guilib/guiinfo/PlayerGUIInfo.h"
 
-#include <cmath>
-
 #include "Application.h"
 #include "FileItem.h"
 #include "PlayListPlayer.h"
 #include "ServiceBroker.h"
+#include "URL.h"
 #include "cores/AudioEngine/Utils/AEUtil.h"
 #include "cores/Cut.h"
 #include "cores/DataCacheCore.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIDialog.h"
 #include "guilib/GUIWindowManager.h"
+#include "guilib/guiinfo/GUIInfo.h"
+#include "guilib/guiinfo/GUIInfoHelper.h"
+#include "guilib/guiinfo/GUIInfoLabels.h"
 #include "utils/StringUtils.h"
 #include "utils/TimeUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/Variant.h"
 #include "utils/log.h"
-#include "URL.h"
 
-#include "guilib/guiinfo/GUIInfo.h"
-#include "guilib/guiinfo/GUIInfoHelper.h"
-#include "guilib/guiinfo/GUIInfoLabels.h"
+#include <cmath>
 
 using namespace KODI::GUILIB::GUIINFO;
 
@@ -39,9 +38,7 @@ CPlayerGUIInfo::CPlayerGUIInfo()
 {
 }
 
-CPlayerGUIInfo::~CPlayerGUIInfo()
-{
-}
+CPlayerGUIInfo::~CPlayerGUIInfo() = default;
 
 int CPlayerGUIInfo::GetTotalPlayTime() const
 {
@@ -290,9 +287,9 @@ bool CPlayerGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
     case PLAYER_ICON:
       value = item->GetArt("thumb");
       if (value.empty())
-        value = item->GetIconImage();
+        value = item->GetArt("icon");
       if (fallback)
-        *fallback = item->GetIconImage();
+        *fallback = item->GetArt("icon");
       return true;
     case PLAYER_CUTLIST:
     case PLAYER_CHAPTERS:

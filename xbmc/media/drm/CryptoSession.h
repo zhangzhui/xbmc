@@ -8,12 +8,12 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
+#include "commons/Buffer.h"
+
 #include <map>
 #include <stdint.h>
-
-#include "commons/Buffer.h"
+#include <string>
+#include <vector>
 
 namespace DRM
 {
@@ -26,7 +26,7 @@ namespace DRM
   public:
     // Interface registration
     static CCryptoSession* GetCryptoSession(const std::string& UUID, const std::string& cipherAlgo, const std::string& macAlgo);
-    virtual ~CCryptoSession() {};
+    virtual ~CCryptoSession() = default;
 
     // Interface methods
     virtual XbmcCommons::Buffer GetKeyRequest(const XbmcCommons::Buffer& init, const std::string& mimeType, bool offlineKey, const std::map<std::string, std::string>& parameters) = 0;

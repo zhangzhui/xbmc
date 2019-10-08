@@ -7,17 +7,19 @@
  */
 
 #include "AnnouncementManager.h"
-#include "threads/SingleLock.h"
-#include <stdio.h>
-#include "utils/log.h"
-#include "utils/Variant.h"
-#include "utils/StringUtils.h"
+
 #include "FileItem.h"
-#include "music/tags/MusicInfoTag.h"
-#include "music/MusicDatabase.h"
-#include "video/VideoDatabase.h"
-#include "pvr/channels/PVRChannel.h"
 #include "PlayListPlayer.h"
+#include "music/MusicDatabase.h"
+#include "music/tags/MusicInfoTag.h"
+#include "pvr/channels/PVRChannel.h"
+#include "threads/SingleLock.h"
+#include "utils/StringUtils.h"
+#include "utils/Variant.h"
+#include "utils/log.h"
+#include "video/VideoDatabase.h"
+
+#include <stdio.h>
 
 #define LOOKUP_PROPERTY "database-lookup"
 
@@ -108,7 +110,7 @@ void CAnnouncementManager::Announce(AnnouncementFlag flag, const char *sender, c
 
 void CAnnouncementManager::DoAnnounce(AnnouncementFlag flag, const char *sender, const char *message, const CVariant &data)
 {
-  CLog::Log(LOGDEBUG, "CAnnouncementManager - Announcement: %s from %s", message, sender);
+  CLog::Log(LOGDEBUG, LOGANNOUNCE, "CAnnouncementManager - Announcement: {} from {}", message, sender);
 
   CSingleLock lock(m_announcersCritSection);
 
@@ -134,7 +136,7 @@ void CAnnouncementManager::DoAnnounce(AnnouncementFlag flag, const char *sender,
 
   if(item->HasPVRChannelInfoTag())
   {
-    const PVR::CPVRChannelPtr channel(item->GetPVRChannelInfoTag());
+    const std::shared_ptr<PVR::CPVRChannel> channel(item->GetPVRChannelInfoTag());
     id = channel->ChannelID();
     type = "channel";
 

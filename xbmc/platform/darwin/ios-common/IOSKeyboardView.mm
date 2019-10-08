@@ -6,15 +6,16 @@
  *  See LICENSES/README.md for more information.
  */
 
+#import "platform/darwin/ios-common/IOSKeyboardView.h"
+
+#include "Application.h"
 #include "guilib/GUIKeyboardFactory.h"
 #include "threads/Event.h"
-#include "Application.h"
 
 #import "platform/darwin/NSLogDebugHelpers.h"
+#import "platform/darwin/ios-common/IOSKeyboard.h"
 #import "platform/darwin/ios/IOSScreenManager.h"
 #import "platform/darwin/ios/XBMCController.h"
-#import "platform/darwin/ios-common/IOSKeyboard.h"
-#import "platform/darwin/ios-common/IOSKeyboardView.h"
 
 static CEvent keyboardFinishedEvent;
 
@@ -36,7 +37,7 @@ static CEvent keyboardFinishedEvent;
   }
   else
   {
-    [self initWithFrameInternal];
+    self = [self initWithFrameInternal];
   }
   return self;
 }
@@ -238,18 +239,17 @@ static CEvent keyboardFinishedEvent;
   // give back the control to whoever
   [_textField resignFirstResponder];
 
-  // always called in the mainloop context
-  // detach the keyboard view from our main controller
-  [g_xbmcController deactivateKeyboard:self];
+  // delay closing view until text field finishes resigning first responder
+  dispatch_async(dispatch_get_main_queue(), ^{
+    // always called in the mainloop context
+    // detach the keyboard view from our main controller
+    [g_xbmcController deactivateKeyboard:self];
 
-  // until keyboard did hide, we let the calling thread break loop
-  if (0 == _keyboardIsShowing)
-  {
     // no more notification we want to receive.
     [[NSNotificationCenter defaultCenter] removeObserver: self];
 
     keyboardFinishedEvent.Set();
-  }
+  });
 }
 
 - (void) deactivate
@@ -348,10 +348,4 @@ static CEvent keyboardFinishedEvent;
   _canceled = cancelFlag;
 }
 
-- (void) dealloc
-{
-  PRINT_SIGNATURE();
-  self.text = nil;
-  [super dealloc];
-}
 @end

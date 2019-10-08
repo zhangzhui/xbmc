@@ -7,52 +7,53 @@
  */
 
 #include "GUIControlFactory.h"
-#include "LocalizeStrings.h"
-#include "GUIButtonControl.h"
-#include "GUIRadioButtonControl.h"
-#include "GUISpinControl.h"
-#include "GUIRSSControl.h"
-#include "GUIImage.h"
+
+#include "GUIAction.h"
 #include "GUIBorderedImage.h"
-#include "GUILabelControl.h"
+#include "GUIButtonControl.h"
+#include "GUIColorManager.h"
+#include "GUIControlGroup.h"
+#include "GUIControlGroupList.h"
 #include "GUIEditControl.h"
 #include "GUIFadeLabelControl.h"
-#include "GUIToggleButtonControl.h"
-#include "GUITextBox.h"
-#include "GUIVideoControl.h"
-#include "GUIProgressControl.h"
-#include "GUISliderControl.h"
+#include "GUIFixedListContainer.h"
+#include "GUIFontManager.h"
+#include "GUIImage.h"
+#include "GUIInfoManager.h"
+#include "GUILabelControl.h"
+#include "GUIListContainer.h"
+#include "GUIListGroup.h"
+#include "GUIListLabel.h"
 #include "GUIMoverControl.h"
+#include "GUIMultiImage.h"
+#include "GUIPanelContainer.h"
+#include "GUIProgressControl.h"
+#include "GUIRSSControl.h"
+#include "GUIRadioButtonControl.h"
 #include "GUIRangesControl.h"
 #include "GUIRenderingControl.h"
 #include "GUIResizeControl.h"
-#include "GUISpinControlEx.h"
-#include "GUIVisualisationControl.h"
-#include "GUISettingsSliderControl.h"
-#include "GUIMultiImage.h"
-#include "GUIControlGroup.h"
-#include "GUIControlGroupList.h"
 #include "GUIScrollBarControl.h"
-#include "GUIListContainer.h"
-#include "GUIFixedListContainer.h"
+#include "GUISettingsSliderControl.h"
+#include "GUISliderControl.h"
+#include "GUISpinControl.h"
+#include "GUISpinControlEx.h"
+#include "GUITextBox.h"
+#include "GUIToggleButtonControl.h"
+#include "GUIVideoControl.h"
+#include "GUIVisualisationControl.h"
 #include "GUIWrappingListContainer.h"
-#include "pvr/windows/GUIEPGGridContainer.h"
-#include "GUIPanelContainer.h"
-#include "GUIListLabel.h"
-#include "GUIListGroup.h"
-#include "GUIInfoManager.h"
-#include "input/Key.h"
+#include "LocalizeStrings.h"
+#include "Util.h"
 #include "addons/Skin.h"
-#include "utils/CharsetConverter.h"
-#include "utils/XMLUtils.h"
-#include "GUIFontManager.h"
-#include "GUIColorManager.h"
-#include "utils/RssManager.h"
-#include "utils/StringUtils.h"
-#include "GUIAction.h"
 #include "cores/RetroPlayer/guicontrols/GUIGameControl.h"
 #include "games/controllers/guicontrols/GUIGameController.h"
-#include "Util.h"
+#include "input/Key.h"
+#include "pvr/guilib/GUIEPGGridContainer.h"
+#include "utils/CharsetConverter.h"
+#include "utils/RssManager.h"
+#include "utils/StringUtils.h"
+#include "utils/XMLUtils.h"
 
 using namespace KODI;
 using namespace KODI::GUILIB;
@@ -415,7 +416,7 @@ bool CGUIControlFactory::GetConditionalVisibility(const TiXmlNode* control, std:
       allowHiddenFocus = hidden;
     // add to our condition string
     if (!node->NoChildren())
-      conditions.push_back(node->FirstChild()->Value());
+      conditions.emplace_back(node->FirstChild()->Value());
     node = node->NextSiblingElement("visible");
   }
   if (!conditions.size())
@@ -592,7 +593,7 @@ void CGUIControlFactory::GetInfoLabels(const TiXmlNode *pControlNode, const std:
   if (XMLUtils::GetInt(pControlNode, "number", labelNumber))
   {
     std::string label = StringUtils::Format("%i", labelNumber);
-    infoLabels.push_back(GUIINFO::CGUIInfoLabel(label));
+    infoLabels.emplace_back(label);
     return; // done
   }
   const TiXmlElement *labelNode = pControlNode->FirstChildElement(labelTag);
@@ -615,7 +616,7 @@ void CGUIControlFactory::GetInfoLabels(const TiXmlNode *pControlNode, const std:
       if (infoNode->FirstChild())
       {
         std::string info = StringUtils::Format("$INFO[%s]", infoNode->FirstChild()->Value());
-        infoLabels.push_back(GUIINFO::CGUIInfoLabel(info, fallback, parentID));
+        infoLabels.emplace_back(info, fallback, parentID);
       }
       infoNode = infoNode->NextSibling("info");
     }

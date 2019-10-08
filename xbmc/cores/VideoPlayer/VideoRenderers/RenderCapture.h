@@ -15,6 +15,7 @@
 
 #include "threads/Event.h"
 
+
 enum ECAPTURESTATE
 {
   CAPTURESTATE_WORKING,
@@ -132,7 +133,7 @@ class CRenderCaptureGL : public CRenderCaptureBase
 {
   public:
     CRenderCaptureGL();
-    ~CRenderCaptureGL();
+    ~CRenderCaptureGL() override;
 
     int   GetCaptureFormat();
 

@@ -8,11 +8,12 @@
 
 #pragma once
 
-#include "IFile.h"
 #include "CacheStrategy.h"
-#include "threads/CriticalSection.h"
 #include "File.h"
+#include "IFile.h"
+#include "threads/CriticalSection.h"
 #include "threads/Thread.h"
+
 #include <atomic>
 #include <memory>
 
@@ -48,7 +49,7 @@ namespace XFILE
 
     const std::string GetProperty(XFILE::FileProperty type, const std::string &name = "") const override;
 
-    virtual const std::vector<std::string> GetPropertyValues(XFILE::FileProperty type, const std::string &name = "") const override
+    const std::vector<std::string> GetPropertyValues(XFILE::FileProperty type, const std::string& name = "") const override
     {
       return std::vector<std::string>();
     }

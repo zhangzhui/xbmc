@@ -10,29 +10,37 @@
 
 #include "addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h"
 #include "interfaces/IAnnouncer.h"
-#include "pvr/PVRActionListener.h"
-#include "pvr/PVRSettings.h"
-#include "pvr/PVRTypes.h"
 #include "pvr/epg/EpgContainer.h"
+#include "pvr/guilib/PVRGUIActionListener.h"
+#include "pvr/settings/PVRSettings.h"
 #include "threads/CriticalSection.h"
 #include "threads/Event.h"
 #include "threads/Thread.h"
 #include "utils/EventStream.h"
-#include "utils/Observer.h"
 
 #include <memory>
 #include <string>
 #include <vector>
 
 class CFileItem;
-class CJob;
 class CStopWatch;
 
 namespace PVR
 {
+  class CPVRChannel;
+  class CPVRChannelGroup;
+  class CPVRChannelGroupsContainer;
   class CPVRClient;
+  class CPVRClients;
+  class CPVRDatabase;
+  class CPVRGUIActions;
   class CPVRGUIInfo;
   class CPVRGUIProgressHandler;
+  class CPVRManagerJobQueue;
+  class CPVRPlaybackState;
+  class CPVRRecording;
+  class CPVRRecordings;
+  class CPVRTimers;
 
   enum class PVREvent
   {
@@ -44,35 +52,35 @@ namespace PVR
     ManagerInterrupted,
     ManagerStarted,
 
+    // Channel events
+    ChannelPlaybackStopped,
+
+    // Channel group events
+    ChannelGroup,
+    ChannelGroupInvalidated,
+    ChannelGroupsInvalidated,
+    ChannelGroupsLoaded,
+
     // Recording events
     RecordingsInvalidated,
 
     // Timer events
+    AnnounceReminder,
+    Timers,
     TimersInvalidated,
-    AnnounceReminder
+
+    // EPG events
+    Epg,
+    EpgActiveItem,
+    EpgContainer,
+    EpgItemUpdate,
+    EpgUpdatePending,
+
+    // Item events
+    CurrentItem,
   };
 
-  class CPVRManagerJobQueue
-  {
-  public:
-    CPVRManagerJobQueue();
-
-    void Start();
-    void Stop();
-    void Clear();
-
-    void AppendJob(CJob * job);
-    void ExecutePendingJobs();
-    bool WaitForJobs(unsigned int milliSeconds);
-
-  private:
-    CCriticalSection m_critSection;
-    CEvent m_triggerEvent;
-    std::vector<CJob *> m_pendingUpdates;
-    bool m_bStopped = true;
-  };
-
-  class CPVRManager : private CThread, public Observable, public ANNOUNCEMENT::IAnnouncer
+  class CPVRManager : private CThread, public ANNOUNCEMENT::IAnnouncer
   {
   public:
     /*!
@@ -85,38 +93,38 @@ namespace PVR
      */
     ~CPVRManager(void) override;
 
-    void Announce(ANNOUNCEMENT::AnnouncementFlag flag, const char *sender, const char *message, const CVariant &data) override;
+    void Announce(ANNOUNCEMENT::AnnouncementFlag flag, const char* sender, const char* message, const CVariant& data) override;
 
     /*!
      * @brief Get the channel groups container.
      * @return The groups container.
      */
-    CPVRChannelGroupsContainerPtr ChannelGroups(void) const;
+    std::shared_ptr<CPVRChannelGroupsContainer> ChannelGroups(void) const;
 
     /*!
      * @brief Get the recordings container.
      * @return The recordings container.
      */
-    CPVRRecordingsPtr Recordings(void) const;
+    std::shared_ptr<CPVRRecordings> Recordings(void) const;
 
     /*!
      * @brief Get the timers container.
      * @return The timers container.
      */
-    CPVRTimersPtr Timers(void) const;
+    std::shared_ptr<CPVRTimers> Timers(void) const;
 
     /*!
      * @brief Get the timers container.
      * @return The timers container.
      */
-    CPVRClientsPtr Clients(void) const;
+    std::shared_ptr<CPVRClients> Clients(void) const;
 
     /*!
      * @brief Get the instance of a client that matches the given item.
      * @param item The item containing a PVR recording, a PVR channel, a PVR timer or a PVR EPG event.
      * @return the requested client on success, nullptr otherwise.
      */
-    std::shared_ptr<CPVRClient> GetClient(const CFileItem &item) const;
+    std::shared_ptr<CPVRClient> GetClient(const CFileItem& item) const;
 
     /*!
      * @brief Get the instance of a client that matches the given id.
@@ -129,7 +137,13 @@ namespace PVR
      * @brief Get access to the pvr gui actions.
      * @return The gui actions.
      */
-    CPVRGUIActionsPtr GUIActions(void) const;
+    std::shared_ptr<CPVRGUIActions> GUIActions(void) const;
+
+    /*!
+     * @brief Get access to the pvr playback state.
+     * @return The playback state.
+     */
+    std::shared_ptr<CPVRPlaybackState> PlaybackState() const;
 
     /*!
      * @brief Get access to the epg container.
@@ -176,34 +190,7 @@ namespace PVR
      * @brief Get the TV database.
      * @return The TV database.
      */
-    CPVRDatabasePtr GetTVDatabase(void) const;
-
-    /*!
-     * @brief Check if a TV channel, radio channel or recording is playing.
-     * @return True if it's playing, false otherwise.
-     */
-    bool IsPlaying(void) const;
-
-    /*!
-     * @brief Check if the given channel is playing.
-     * @param channel The channel to check.
-     * @return True if it's playing, false otherwise.
-     */
-    bool IsPlayingChannel(const CPVRChannelPtr &channel) const;
-
-    /*!
-     * @brief Check if the given recording is playing.
-     * @param recording The recording to check.
-     * @return True if it's playing, false otherwise.
-     */
-    bool IsPlayingRecording(const CPVRRecordingPtr &recording) const;
-
-    /*!
-     * @brief Check if the given epg tag is playing.
-     * @param epgTag The tag to check.
-     * @return True if it's playing, false otherwise.
-     */
-    bool IsPlayingEpgTag(const CPVREpgInfoTagPtr &epgTag) const;
+    std::shared_ptr<CPVRDatabase> GetTVDatabase(void) const;
 
     /*!
      * @return True while the PVRManager is initialising.
@@ -241,62 +228,6 @@ namespace PVR
     }
 
     /*!
-     * @brief Check whether playing channel matches given uids.
-     * @param iClientID The client id.
-     * @param iUniqueChannelID The channel uid.
-     * @return True on match, false if there is no match or no channel is playing.
-     */
-    bool IsPlayingChannel(int iClientID, int iUniqueChannelID) const;
-
-    /*!
-     * @brief Return the channel that is currently playing.
-     * @return The channel or NULL if none is playing.
-     */
-    CPVRChannelPtr GetPlayingChannel(void) const;
-
-    /*!
-     * @brief Return the recording that is currently playing.
-     * @return The recording or NULL if none is playing.
-     */
-    CPVRRecordingPtr GetPlayingRecording(void) const;
-
-    /*!
-     * @brief Return the epg tag that is currently playing.
-     * @return The tag or NULL if none is playing.
-     */
-    CPVREpgInfoTagPtr GetPlayingEpgTag(void) const;
-
-    /*!
-     * @brief Get the name of the playing client, if there is one.
-     * @return The name of the client or an empty string if nothing is playing.
-     */
-    std::string GetPlayingClientName(void) const;
-
-    /*!
-     * @brief Get the ID of the playing client, if there is one.
-     * @return The ID or -1 if no client is playing.
-     */
-    int GetPlayingClientID(void) const;
-
-    /*!
-     * @brief Check whether there is an active recording on the currenlyt playing channel.
-     * @return True if there is a playing channel and there is an active recording on that channel, false otherwise.
-     */
-    bool IsRecordingOnPlayingChannel(void) const;
-
-    /*!
-     * @brief Check if an active recording is playing.
-     * @return True if an in-progress (active) recording is playing, false otherwise.
-     */
-    bool IsPlayingActiveRecording() const;
-
-    /*!
-     * @brief Check whether the currently playing channel can be recorded.
-     * @return True if there is a playing channel that can be recorded, false otherwise.
-     */
-    bool CanRecordOnPlayingChannel(void) const;
-
-    /*!
      * @brief Check whether EPG tags for channels have been created.
      * @return True if EPG tags have been created, false otherwise.
      */
@@ -325,19 +256,6 @@ namespace PVR
      * @return True if there are active recordings, false otherwise.
      */
     bool IsRecording(void) const;
-
-    /*!
-     * @brief Set the current playing group, used to load the right channel.
-     * @param group The new group.
-     */
-    void SetPlayingGroup(const CPVRChannelGroupPtr &group);
-
-    /*!
-     * @brief Get the current playing group, used to load the right channel.
-     * @param bRadio True to get the current radio group, false to get the current TV group.
-     * @return The current group or the group containing all channels if it's not set.
-     */
-    CPVRChannelGroupPtr GetPlayingGroup(bool bRadio = false) const;
 
     /*!
      * @brief Let the background thread create epg tags for all channels.
@@ -381,36 +299,6 @@ namespace PVR
     void LocalizationChanged(void);
 
     /*!
-     * @brief Check if a TV channel is playing.
-     * @return True if it's playing, false otherwise.
-     */
-    bool IsPlayingTV(void) const;
-
-    /*!
-     * @brief Check if a radio channel is playing.
-     * @return True if it's playing, false otherwise.
-     */
-    bool IsPlayingRadio(void) const;
-
-    /*!
-     * @brief Check if a an encrypted TV or radio channel is playing.
-     * @return True if it's playing, false otherwise.
-     */
-    bool IsPlayingEncryptedChannel(void) const;
-
-    /*!
-     * @brief Check if a recording is playing.
-     * @return True if it's playing, false otherwise.
-     */
-    bool IsPlayingRecording(void) const;
-
-    /*!
-     * @brief Check if an epg tag is playing.
-     * @return True if it's playing, false otherwise.
-     */
-    bool IsPlayingEpgTag(void) const;
-
-    /*!
      * @brief Check if parental lock is overridden at the given moment.
      * @param channel The channel to check.
      * @return True if parental lock is overridden, false otherwise.
@@ -438,7 +326,10 @@ namespace PVR
     /*!
      * @brief Signal a connection change of a client
      */
-    void ConnectionStateChange(CPVRClient *client, std::string connectString, PVR_CONNECTION_STATE state, std::string message);
+    void ConnectionStateChange(CPVRClient* client,
+                               const std::string& connectString,
+                               PVR_CONNECTION_STATE state,
+                               const std::string& message);
 
     /*!
      * @brief Query the events available for CEventStream
@@ -458,19 +349,6 @@ namespace PVR
     void Process(void) override;
 
   private:
-    /*!
-     * @brief Updates the last watched timestamps of the channel and group which are currently playing.
-     * @param channel The channel which is updated
-     * @param time The last watched time to set
-     */
-    void UpdateLastWatched(const CPVRChannelPtr &channel, const CDateTime& time);
-
-    /*!
-     * @brief Set the playing group to the first group the channel is in if the given channel is not part of the current playing group
-     * @param channel The channel
-     */
-    void SetPlayingGroup(const CPVRChannelPtr &channel);
-
     /*!
      * @brief Executes "pvrpowermanagement.setwakeupcmd"
      */
@@ -529,41 +407,32 @@ namespace PVR
 
     /** @name containers */
     //@{
-    CPVRChannelGroupsContainerPtr  m_channelGroups;               /*!< pointer to the channel groups container */
-    CPVRRecordingsPtr              m_recordings;                  /*!< pointer to the recordings container */
-    CPVRTimersPtr                  m_timers;                      /*!< pointer to the timers container */
-    CPVRClientsPtr                 m_addons;                      /*!< pointer to the pvr addon container */
-    std::unique_ptr<CPVRGUIInfo>   m_guiInfo;                     /*!< pointer to the guiinfo data */
-    CPVRGUIActionsPtr              m_guiActions;                  /*!< pointer to the pvr gui actions */
-    CPVREpgContainer               m_epgContainer;                /*!< the epg container */
+    std::shared_ptr<CPVRChannelGroupsContainer> m_channelGroups; /*!< pointer to the channel groups container */
+    std::shared_ptr<CPVRRecordings> m_recordings; /*!< pointer to the recordings container */
+    std::shared_ptr<CPVRTimers> m_timers; /*!< pointer to the timers container */
+    std::shared_ptr<CPVRClients> m_addons; /*!< pointer to the pvr addon container */
+    std::unique_ptr<CPVRGUIInfo> m_guiInfo; /*!< pointer to the guiinfo data */
+    std::shared_ptr<CPVRGUIActions> m_guiActions; /*!< pointer to the pvr gui actions */
+    CPVREpgContainer m_epgContainer; /*!< the epg container */
     //@}
 
-    CPVRManagerJobQueue             m_pendingUpdates;              /*!< vector of pending pvr updates */
+    std::unique_ptr<CPVRManagerJobQueue> m_pendingUpdates; /*!< vector of pending pvr updates */
+    std::shared_ptr<CPVRDatabase> m_database; /*!< the database for all PVR related data */
+    mutable CCriticalSection m_critSection; /*!< critical section for all changes to this class, except for changes to triggers */
+    bool m_bFirstStart = true; /*!< true when the PVR manager was started first, false otherwise */
+    bool m_bEpgsCreated = false; /*!< true if epg data for channels has been created */
 
-    CPVRDatabasePtr                 m_database;                    /*!< the database for all PVR related data */
-    mutable CCriticalSection        m_critSection;                 /*!< critical section for all changes to this class, except for changes to triggers */
-    bool                            m_bFirstStart = true;          /*!< true when the PVR manager was started first, false otherwise */
-    bool                            m_bEpgsCreated = false;        /*!< true if epg data for channels has been created */
+    mutable CCriticalSection m_managerStateMutex;
+    ManagerState m_managerState = ManagerStateStopped;
+    std::unique_ptr<CStopWatch> m_parentalTimer;
 
-    mutable CCriticalSection        m_managerStateMutex;
-    ManagerState                    m_managerState = ManagerStateStopped;
-    std::unique_ptr<CStopWatch>     m_parentalTimer;
-
-    CCriticalSection                m_startStopMutex; // mutex for protecting pvr manager's start/restart/stop sequence */
+    CCriticalSection m_startStopMutex; // mutex for protecting pvr manager's start/restart/stop sequence */
 
     CEventSource<PVREvent> m_events;
 
-    CPVRActionListener m_actionListener;
+    std::shared_ptr<CPVRPlaybackState> m_playbackState;
+
+    CPVRGUIActionListener m_actionListener;
     CPVRSettings m_settings;
-
-    CPVRChannelPtr m_playingChannel;
-    CPVRRecordingPtr m_playingRecording;
-    CPVREpgInfoTagPtr m_playingEpgTag;
-    std::string m_strPlayingClientName;
-    int m_playingClientId = -1;
-    int m_iplayingChannelUniqueID = -1;
-
-    class CLastWatchedUpdateTimer;
-    std::unique_ptr<CLastWatchedUpdateTimer> m_lastWatchedUpdateTimer;
   };
 }

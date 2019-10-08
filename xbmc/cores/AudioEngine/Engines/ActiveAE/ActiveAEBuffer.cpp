@@ -6,11 +6,12 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include "ActiveAE.h"
 #include "ActiveAEBuffer.h"
+
+#include "ActiveAE.h"
 #include "ActiveAEFilter.h"
-#include "cores/AudioEngine/Utils/AEUtil.h"
 #include "cores/AudioEngine/AEResampleFactory.h"
+#include "cores/AudioEngine/Utils/AEUtil.h"
 
 using namespace ActiveAE;
 
@@ -26,10 +27,6 @@ CSoundPacket::~CSoundPacket()
 {
   if (data)
     CActiveAE::FreeSoundSample(data);
-}
-
-CSampleBuffer::CSampleBuffer()
-{
 }
 
 CSampleBuffer::~CSampleBuffer()

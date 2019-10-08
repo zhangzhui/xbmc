@@ -130,8 +130,8 @@
 #include "addons/settings/GUIDialogAddonSettings.h"
 
 // PVR related include Files
-#include "pvr/PVRGUIActions.h"
 #include "pvr/PVRManager.h"
+#include "pvr/guilib/PVRGUIActions.h"
 
 #include "video/dialogs/GUIDialogFullScreenInfo.h"
 #include "dialogs/GUIDialogCache.h"
@@ -186,7 +186,7 @@
 
 //TODO: XInitThreads
 #ifdef HAVE_X11
-#include "X11/Xlib.h"
+#include <X11/Xlib.h>
 #endif
 
 #include "cores/FFmpeg.h"
@@ -2047,6 +2047,10 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
     InhibitIdleShutdown(pMsg->param1 != 0);
     break;
 
+  case TMSG_INHIBITSCREENSAVER:
+    InhibitScreenSaver(pMsg->param1 != 0);
+    break;
+
   case TMSG_ACTIVATESCREENSAVER:
     ActivateScreenSaver();
     break;
@@ -2648,7 +2652,11 @@ bool CApplication::PlayMedia(CFileItem& item, const std::string &player, int iPl
       smartpl.OpenAndReadName(item.GetURL());
       CPlayList playlist;
       playlist.Add(items);
-      return ProcessAndStartPlaylist(smartpl.GetName(), playlist, (smartpl.GetType() == "songs" || smartpl.GetType() == "albums") ? PLAYLIST_MUSIC:PLAYLIST_VIDEO);
+      int iPlaylist = PLAYLIST_VIDEO;
+      if (smartpl.GetType() == "songs" || smartpl.GetType() == "albums" ||
+        smartpl.GetType() == "artists")
+        iPlaylist = PLAYLIST_MUSIC;
+      return ProcessAndStartPlaylist(smartpl.GetName(), playlist, iPlaylist);
     }
   }
   else if (item.IsPlayList() || item.IsInternetStream())
@@ -2977,7 +2985,7 @@ void CApplication::PlaybackCleanup()
       //  resets to res_desktop or look&feel resolution (including refreshrate)
       CServiceBroker::GetWinSystem()->GetGfxContext().SetFullScreenVideo(false);
     }
-#ifdef TARGET_DARWIN_IOS
+#ifdef TARGET_DARWIN_EMBEDDED
     CDarwinUtils::SetScheduling(false);
 #endif
   }
@@ -3134,10 +3142,6 @@ void CApplication::OnPlayBackStopped()
 {
   CLog::LogF(LOGDEBUG, "CApplication::OnPlayBackStopped");
 
-#if defined(TARGET_DARWIN_IOS)
-  CDarwinUtils::EnableOSScreenSaver(true);
-#endif
-
   CServiceBroker::GetPVRManager().OnPlaybackStopped(m_itemCurrentFile);
 
   CVariant data(CVariant::VariantTypeObject);
@@ -3162,9 +3166,6 @@ void CApplication::OnPlayBackPaused()
 #ifdef HAS_PYTHON
   g_pythonParser.OnPlayBackPaused();
 #endif
-#if defined(TARGET_DARWIN_IOS)
-  CDarwinUtils::EnableOSScreenSaver(true);
-#endif
 
   CVariant param;
   param["player"]["speed"] = 0;
@@ -3176,10 +3177,6 @@ void CApplication::OnPlayBackResumed()
 {
 #ifdef HAS_PYTHON
   g_pythonParser.OnPlayBackResumed();
-#endif
-#if defined(TARGET_DARWIN_IOS)
-  if (m_appPlayer.IsPlayingVideo())
-    CDarwinUtils::EnableOSScreenSaver(false);
 #endif
 
   CVariant param;
@@ -3324,9 +3321,6 @@ void CApplication::ResetSystemIdleTimer()
 {
   // reset system idle timer
   m_idleTimer.StartZero();
-#if defined(TARGET_DARWIN_IOS)
-  CDarwinUtils::ResetSystemIdleTimer();
-#endif
 }
 
 void CApplication::ResetScreenSaver()
@@ -3536,6 +3530,10 @@ void CApplication::CheckScreenSaverAndDPMS()
   // explicit user activity such as input
   bool haveIdleActivity = false;
 
+  // When inhibit screensaver is enabled prevent screensaver from kicking in
+  if (m_bInhibitScreenSaver)
+    haveIdleActivity = true;
+
   // Are we playing a video and it is not paused?
   if (m_appPlayer.IsPlayingVideo() && !m_appPlayer.IsPaused())
     haveIdleActivity = true;
@@ -3619,30 +3617,36 @@ void CApplication::ActivateScreenSaver(bool forceType /*= false */)
   // disable screensaver lock from the login screen
   m_iScreenSaveLock = CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow() == WINDOW_LOGIN_SCREEN ? 1 : 0;
 
-  // set to Dim in the case of a dialog on screen or playing video
-  bool bUseDim = false;
+  m_screensaverIdInUse = settings->GetString(CSettings::SETTING_SCREENSAVER_MODE);
+
   if (!forceType)
   {
+    if (m_screensaverIdInUse == "screensaver.xbmc.builtin.dim" ||
+        m_screensaverIdInUse == "screensaver.xbmc.builtin.black" ||
+        m_screensaverIdInUse.empty())
+    {
+      return;
+    }
+
+    // Enforce Dim for special cases.
+    bool bUseDim = false;
     if (CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog(true))
       bUseDim = true;
     else if (m_appPlayer.IsPlayingVideo() && settings->GetBool(CSettings::SETTING_SCREENSAVER_USEDIMONPAUSE))
       bUseDim = true;
     else if (CServiceBroker::GetPVRManager().GUIActions()->IsRunningChannelScan())
       bUseDim = true;
+
+    if (bUseDim)
+      m_screensaverIdInUse = "screensaver.xbmc.builtin.dim";
   }
 
-  if (bUseDim)
-    m_screensaverIdInUse = "screensaver.xbmc.builtin.dim";
-  else // Get Screensaver Mode
-    m_screensaverIdInUse = settings->GetString(CSettings::SETTING_SCREENSAVER_MODE);
-
   if (m_screensaverIdInUse == "screensaver.xbmc.builtin.dim" ||
-      m_screensaverIdInUse == "screensaver.xbmc.builtin.black")
+      m_screensaverIdInUse == "screensaver.xbmc.builtin.black" ||
+      m_screensaverIdInUse.empty())
   {
     return;
   }
-  else if (m_screensaverIdInUse.empty())
-    return;
   else if (CServiceBroker::GetAddonMgr().GetAddon(m_screensaverIdInUse, m_pythonScreenSaver, ADDON_SCREENSAVER))
   {
     std::string libPath = m_pythonScreenSaver->LibPath();
@@ -3661,6 +3665,16 @@ void CApplication::ActivateScreenSaver(bool forceType /*= false */)
   }
 
   CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(WINDOW_SCREENSAVER);
+}
+
+void CApplication::InhibitScreenSaver(bool inhibit)
+{
+  m_bInhibitScreenSaver = inhibit;
+}
+
+bool CApplication::IsScreenSaverInhibited() const
+{
+  return m_bInhibitScreenSaver;
 }
 
 void CApplication::CheckShutdown()
@@ -3753,7 +3767,7 @@ bool CApplication::OnMessage(CGUIMessage& message)
 
   case GUI_MSG_PLAYBACK_STARTED:
     {
-#ifdef TARGET_DARWIN_IOS
+#ifdef TARGET_DARWIN_EMBEDDED
       // @TODO move this away to platform code
       CDarwinUtils::SetScheduling(m_appPlayer.IsPlayingVideo());
 #endif

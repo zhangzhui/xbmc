@@ -7,6 +7,7 @@
  */
 
 #include "ControllerGrid.h"
+
 #include "games/controllers/Controller.h"
 #include "utils/log.h"
 
@@ -15,16 +16,6 @@
 
 using namespace KODI;
 using namespace GAME;
-
-CControllerGrid::CControllerGrid()
-{
-}
-
-CControllerGrid::CControllerGrid(const CControllerGrid &other) :
-  m_grid(other.m_grid),
-  m_height(other.m_height)
-{
-}
 
 CControllerGrid::~CControllerGrid() = default;
 

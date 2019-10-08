@@ -7,15 +7,16 @@
  */
 
 #include "Resolution.h"
+
 #include "GraphicContext.h"
-#include "utils/Variant.h"
-#include "utils/log.h"
-#include "utils/MathUtils.h"
+#include "ServiceBroker.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/DisplaySettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "ServiceBroker.h"
+#include "utils/MathUtils.h"
+#include "utils/Variant.h"
+#include "utils/log.h"
 
 #include <cstdlib>
 
@@ -97,7 +98,7 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, int hei
         if ((info.fRefreshRate > 30) || (MathUtils::FloatEquals(info.fRefreshRate, 24.0f, 0.1f)))
         {
           resString = CDisplaySettings::GetInstance().GetStringFromRes(c);
-          indexList.push_back(resString);
+          indexList.emplace_back(resString);
         }
       }
     }

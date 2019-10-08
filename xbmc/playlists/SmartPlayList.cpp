@@ -6,13 +6,8 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include <cstdlib>
-#include <memory>
-#include <set>
-#include <string>
-#include <vector>
-
 #include "SmartPlayList.h"
+
 #include "Util.h"
 #include "dbwrappers/Database.h"
 #include "filesystem/File.h"
@@ -21,13 +16,19 @@
 #include "utils/DatabaseUtils.h"
 #include "utils/JSONVariantParser.h"
 #include "utils/JSONVariantWriter.h"
-#include "utils/log.h"
 #include "utils/StreamDetails.h"
 #include "utils/StringUtils.h"
 #include "utils/StringValidation.h"
 #include "utils/URIUtils.h"
 #include "utils/Variant.h"
 #include "utils/XMLUtils.h"
+#include "utils/log.h"
+
+#include <cstdlib>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
 
 using namespace XFILE;
 
@@ -1454,7 +1455,7 @@ void CSmartPlaylist::GetAvailableFields(const std::string &type, std::vector<std
     for (const translateField& i : fields)
     {
       if (*field == i.field)
-        fieldList.push_back(i.string);
+        fieldList.emplace_back(i.string);
     }
   }
 }

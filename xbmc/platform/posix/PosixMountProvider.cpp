@@ -6,12 +6,13 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include <cstdlib>
-
 #include "PosixMountProvider.h"
+
 #include "utils/RegExp.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
+
+#include <cstdlib>
 
 CPosixMountProvider::CPosixMountProvider()
 {
@@ -64,7 +65,7 @@ void CPosixMountProvider::GetDrives(VECSOURCES &drives)
           accepted = false;
 
         if(accepted)
-          result.push_back(mount);
+          result.emplace_back(mount);
       }
     }
     pclose(pipe);
@@ -109,7 +110,7 @@ std::vector<std::string> CPosixMountProvider::GetDiskUsage()
         }
       }
       if (ok)
-        result.push_back(line);
+        result.emplace_back(line);
     }
     pclose(pipe);
   }
@@ -120,7 +121,7 @@ std::vector<std::string> CPosixMountProvider::GetDiskUsage()
 bool CPosixMountProvider::Eject(const std::string& mountpath)
 {
 
-#if !defined(TARGET_DARWIN_IOS)
+#if !defined(TARGET_DARWIN_EMBEDDED)
   // just go ahead and try to umount the disk
   // if it does umount, life is good, if not, no loss.
   std::string cmd = "umount \"" + mountpath + "\"";

@@ -8,14 +8,14 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include "utils/BitstreamStats.h"
-#include "filesystem/IFileTypes.h"
-
 #include "FileItem.h"
 #include "URL.h"
+#include "filesystem/IFileTypes.h"
+#include "utils/BitstreamStats.h"
 #include "utils/Geometry.h"
+
+#include <string>
+#include <vector>
 
 enum DVDStreamType
 {
@@ -185,6 +185,7 @@ public:
   virtual IPosTime* GetIPosTime() { return nullptr; }
   virtual IDisplayTime* GetIDisplayTime() { return nullptr; }
   virtual ITimes* GetITimes() { return nullptr; }
+  virtual IChapter* GetIChapter() { return nullptr; }
 
   const CVariant &GetProperty(const std::string key){ return m_item.GetProperty(key); }
 

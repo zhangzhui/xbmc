@@ -8,23 +8,24 @@
 
 #pragma once
 
+#include "settings/lib/ISettingCallback.h"
+#include "windowing/Resolution.h"
+
 #include <string>
 #include <vector>
 
 #include <androidjni/Display.h>
 
-#include "settings/lib/ISettingCallback.h"
-#include "windowing/Resolution.h"
-
 class CAndroidUtils : public ISettingCallback
 {
 public:
   CAndroidUtils();
-  virtual ~CAndroidUtils();
-  virtual bool  GetNativeResolution(RESOLUTION_INFO *res) const;
-  virtual bool  SetNativeResolution(const RESOLUTION_INFO &res);
-  virtual bool  ProbeResolutions(std::vector<RESOLUTION_INFO> &resolutions);
-  virtual bool UpdateDisplayModes();
+  ~CAndroidUtils() override = default;
+  bool GetNativeResolution(RESOLUTION_INFO* res) const;
+  bool SetNativeResolution(const RESOLUTION_INFO& res);
+  bool ProbeResolutions(std::vector<RESOLUTION_INFO>& resolutions);
+  bool UpdateDisplayModes();
+  bool IsHDRDisplay();
 
   // Implementation of ISettingCallback
   static const std::string SETTING_LIMITGUI;

@@ -7,10 +7,10 @@
  */
 
 #include "AddonInstanceHandler.h"
-#include "BinaryAddonBase.h"
 
-#include "utils/log.h"
+#include "BinaryAddonBase.h"
 #include "utils/StringUtils.h"
+#include "utils/log.h"
 
 namespace ADDON
 {
@@ -70,7 +70,7 @@ std::string IAddonInstanceHandler::Profile() const
 
 AddonVersion IAddonInstanceHandler::Version() const
 {
-  return m_addon ? m_addon->Version() : AddonVersion("0.0.0");
+  return m_addon ? m_addon->Version() : AddonVersion();
 }
 
 ADDON_STATUS IAddonInstanceHandler::CreateInstance(KODI_HANDLE instance)

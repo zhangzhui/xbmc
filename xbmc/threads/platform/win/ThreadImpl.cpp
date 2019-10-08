@@ -6,10 +6,12 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include <windows.h>
-#include <process.h>
-#include "platform/win32/WIN32Util.h"
 #include "utils/log.h"
+
+#include "platform/win32/WIN32Util.h"
+
+#include <process.h>
+#include <windows.h>
 
 void CThread::SetThreadInfo()
 {
@@ -46,6 +48,11 @@ void CThread::SetThreadInfo()
 std::uintptr_t CThread::GetCurrentThreadNativeHandle()
 {
   return reinterpret_cast<std::uintptr_t>(::GetCurrentThread());
+}
+
+uint64_t CThread::GetCurrentThreadNativeId()
+{
+  return static_cast<uint64_t>(::GetCurrentThreadId());
 }
 
 int CThread::GetMinPriority(void)

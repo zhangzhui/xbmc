@@ -9,8 +9,8 @@
 #pragma once
 
 #include "guilib/WindowIDs.h"
-#include "threads/Thread.h"
 #include "messaging/ThreadMessage.h"
+#include "threads/Thread.h"
 
 #include <map>
 #include <memory>
@@ -76,6 +76,7 @@
 #define TMSG_PICTURE_SLIDESHOW            TMSG_MASK_APPLICATION + 26
 #define TMSG_LOADPROFILE                  TMSG_MASK_APPLICATION + 27
 #define TMSG_VIDEORESIZE                  TMSG_MASK_APPLICATION + 28
+#define TMSG_INHIBITSCREENSAVER           TMSG_MASK_APPLICATION + 29
 
 #define TMSG_SYSTEM_POWERDOWN             TMSG_MASK_APPLICATION + 30
 #define TMSG_RENDERER_PREINIT             TMSG_MASK_APPLICATION + 31

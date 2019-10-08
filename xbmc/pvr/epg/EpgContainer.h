@@ -10,12 +10,11 @@
 
 #include "XBDateTime.h"
 #include "addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h"
-#include "pvr/PVRSettings.h"
-#include "pvr/PVRTypes.h"
+#include "pvr/settings/PVRSettings.h"
 #include "threads/CriticalSection.h"
 #include "threads/Event.h"
 #include "threads/Thread.h"
-#include "utils/Observer.h"
+#include "utils/EventStream.h"
 
 #include <list>
 #include <map>
@@ -33,7 +32,9 @@ namespace PVR
   class CPVREpgDatabase;
   class CPVREpgInfoTag;
 
-  class CPVREpgContainer : public Observer, public Observable, private CThread
+  enum class PVREvent;
+
+  class CPVREpgContainer : private CThread
   {
     friend class CPVREpgDatabase;
 
@@ -52,7 +53,12 @@ namespace PVR
      * @brief Get a pointer to the database instance.
      * @return A pointer to the database instance.
      */
-    CPVREpgDatabasePtr GetEpgDatabase() const;
+    std::shared_ptr<CPVREpgDatabase> GetEpgDatabase() const;
+
+    /*!
+     * @brief Query the events available for CEventStream
+     */
+    CEventStream<PVREvent>& Events() { return m_events; }
 
     /*!
      * @brief Start the EPG update thread.
@@ -82,14 +88,13 @@ namespace PVR
      * @param bDeleteFromDatabase Delete this table from the database too if true.
      * @return True on success, false otherwise.
      */
-    bool DeleteEpg(const CPVREpgPtr &epg, bool bDeleteFromDatabase = false);
+    bool DeleteEpg(const std::shared_ptr<CPVREpg>& epg, bool bDeleteFromDatabase = false);
 
     /*!
-     * @brief Process a notification from an observable.
-     * @param obs The observable that sent the update.
-     * @param msg The update message.
+     * @brief CEventStream callback for PVR events.
+     * @param event The event.
      */
-    void Notify(const Observable &obs, const ObservableMessage msg) override;
+    void Notify(const PVREvent& event);
 
     /*!
      * @brief Create the EPg for a given channel.
@@ -123,7 +128,7 @@ namespace PVR
      * @param iEpgId The database ID of the table.
      * @return The EPG or nullptr if it wasn't found.
      */
-    CPVREpgPtr GetById(int iEpgId) const;
+    std::shared_ptr<CPVREpg> GetById(int iEpgId) const;
 
     /*!
      * @brief Get an EPG given its client id and channel uid.
@@ -171,7 +176,7 @@ namespace PVR
      * @param tag The epg tag containing the updated data
      * @param eNewState The kind of change (CREATED, UPDATED, DELETED)
      */
-    void UpdateFromClient(const CPVREpgInfoTagPtr &tag, EPG_EVENT_STATE eNewState);
+    void UpdateFromClient(const std::shared_ptr<CPVREpgInfoTag>& tag, EPG_EVENT_STATE eNewState);
 
     /*!
      * @brief Get the number of past days to show in the guide and to import from backends.
@@ -252,35 +257,36 @@ namespace PVR
      * @brief Insert data from database
      * @param newEpg the EPG containing the updated data.
      */
-    void InsertFromDB(const CPVREpgPtr &newEpg);
+    void InsertFromDB(const std::shared_ptr<CPVREpg>& newEpg);
 
-    CPVREpgDatabasePtr m_database; /*!< the EPG database */
+    std::shared_ptr<CPVREpgDatabase> m_database; /*!< the EPG database */
 
-    bool m_bIsUpdating = false;                /*!< true while an update is running */
-    bool m_bIsInitialising = true;             /*!< true while the epg manager hasn't loaded all tables */
-    bool m_bStarted = false;                   /*!< true if EpgContainer has fully started */
-    bool m_bLoaded = false;                    /*!< true after epg data is initially loaded from the database */
-    bool m_bPreventUpdates = false;            /*!< true to prevent EPG updates */
-    bool m_bPlaying = false;                   /*!< true if Kodi is currently playing something */
-    int m_pendingUpdates = 0;                  /*!< count of pending manual updates */
-    time_t m_iLastEpgCleanup = 0;              /*!< the time the EPG was cleaned up */
-    time_t m_iNextEpgUpdate = 0;               /*!< the time the EPG will be updated */
-    time_t m_iNextEpgActiveTagCheck = 0;       /*!< the time the EPG will be checked for active tag updates */
-    int m_iNextEpgId = 0;                      /*!< the next epg ID that will be given to a new table when the db isn't being used */
+    bool m_bIsUpdating = false; /*!< true while an update is running */
+    bool m_bIsInitialising = true; /*!< true while the epg manager hasn't loaded all tables */
+    bool m_bStarted = false; /*!< true if EpgContainer has fully started */
+    bool m_bLoaded = false; /*!< true after epg data is initially loaded from the database */
+    bool m_bPreventUpdates = false; /*!< true to prevent EPG updates */
+    bool m_bPlaying = false; /*!< true if Kodi is currently playing something */
+    int m_pendingUpdates = 0; /*!< count of pending manual updates */
+    time_t m_iLastEpgCleanup = 0; /*!< the time the EPG was cleaned up */
+    time_t m_iNextEpgUpdate = 0; /*!< the time the EPG will be updated */
+    time_t m_iNextEpgActiveTagCheck = 0; /*!< the time the EPG will be checked for active tag updates */
+    int m_iNextEpgId = 0; /*!< the next epg ID that will be given to a new table when the db isn't being used */
 
     std::map<int, std::shared_ptr<CPVREpg>> m_epgIdToEpgMap; /*!< the EPGs in this container. maps epg ids to epgs */
     std::map<std::pair<int, int>, std::shared_ptr<CPVREpg>> m_channelUidToEpgMap; /*!< the EPGs in this container. maps channel uids to epgs */
 
-    mutable CCriticalSection m_critSection;    /*!< a critical section for changes to this container */
-    CEvent m_updateEvent;                      /*!< trigger when an update finishes */
+    mutable CCriticalSection m_critSection; /*!< a critical section for changes to this container */
+    CEvent m_updateEvent; /*!< trigger when an update finishes */
 
     std::list<CEpgUpdateRequest> m_updateRequests; /*!< list of update requests triggered by addon */
-    CCriticalSection m_updateRequestsLock;         /*!< protect update requests */
+    CCriticalSection m_updateRequestsLock; /*!< protect update requests */
 
     std::list<CEpgTagStateChange> m_epgTagChanges; /*!< list of updated epg tags announced by addon */
-    CCriticalSection m_epgTagChangesLock;          /*!< protect changed epg tags list */
+    CCriticalSection m_epgTagChangesLock; /*!< protect changed epg tags list */
 
     bool m_bUpdateNotificationPending = false; /*!< true while an epg updated notification to observers is pending. */
     CPVRSettings m_settings;
+    CEventSource<PVREvent> m_events;
   };
 }

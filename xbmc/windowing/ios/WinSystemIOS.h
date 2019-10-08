@@ -8,12 +8,14 @@
 
 #pragma once
 
+#include "rendering/gles/RenderSystemGLES.h"
+#include "threads/CriticalSection.h"
+#include "windowing/WinSystem.h"
+
 #include <string>
 #include <vector>
 
-#include "windowing/WinSystem.h"
-#include "rendering/gles/RenderSystemGLES.h"
-#include "threads/CriticalSection.h"
+#include <CoreVideo/CVOpenGLESTextureCache.h>
 
 class IDispResource;
 class CVideoSyncIos;
@@ -23,7 +25,7 @@ class CWinSystemIOS : public CWinSystemBase, public CRenderSystemGLES
 {
 public:
   CWinSystemIOS();
-  virtual ~CWinSystemIOS();
+  ~CWinSystemIOS() override;
 
   int GetDisplayIndexFromSettings();
   // Implementation of CWinSystemBase
@@ -55,13 +57,13 @@ public:
   void Register(IDispResource *resource) override;
   void Unregister(IDispResource *resource) override;
 
-  virtual std::unique_ptr<CVideoSync> GetVideoSync(void *clock) override;
+  std::unique_ptr<CVideoSync> GetVideoSync(void* clock) override;
 
   bool InitDisplayLink(CVideoSyncIos *syncImpl);
   void DeinitDisplayLink(void);
   void OnAppFocusChange(bool focus);
   bool IsBackgrounded() const { return m_bIsBackgrounded; }
-  void* GetEAGLContextObj();
+  CVEAGLContext GetEAGLContextObj();
   void GetConnectedOutputs(std::vector<std::string> *outputs);
   void MoveToTouchscreen();
 

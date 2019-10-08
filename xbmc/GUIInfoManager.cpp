@@ -8,12 +8,6 @@
 
 #include "GUIInfoManager.h"
 
-#include <algorithm>
-#include <cmath>
-#include <functional>
-#include <iterator>
-#include <memory>
-
 #include "Application.h"
 #include "FileItem.h"
 #include "ServiceBroker.h"
@@ -33,6 +27,12 @@
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
+
+#include <algorithm>
+#include <cmath>
+#include <functional>
+#include <iterator>
+#include <memory>
 
 using namespace KODI::GUILIB;
 using namespace KODI::GUILIB::GUIINFO;
@@ -274,6 +274,26 @@ const infomap string_bools[] =   {{ "isempty",          STRING_IS_EMPTY },
 ///     @skinning_v17 **[New Boolean Condition]** \link Integer_IsLessOrEqual `Integer.IsLessOrEqual(info\,number)`\endlink
 ///     <p>
 ///   }
+///   \table_row3{   <b>`Integer.IsEven(info)`</b>,
+///                  \anchor Integer_IsEven
+///                  _boolean_,
+///     @return **True** if the value of the infolabel is odd
+///     @param info - infolabel
+///     @note **Example:** `Integer.IsEven(ListItem.CurrentItem)`
+///     <p><hr>
+///     @skinning_v19 **[New Boolean Condition]** \link Integer_IsEven `Integer.IsEven(info)`\endlink
+///     <p>
+///   }
+///   \table_row3{   <b>`Integer.IsOdd(info)`</b>,
+///                  \anchor Integer_IsOdd
+///                  _boolean_,
+///     @return **True** if the value of the infolabel is odd
+///     @param info - infolabel
+///     @note **Example:** `Integer.IsOdd(ListItem.CurrentItem)`
+///     <p><hr>
+///     @skinning_v19 **[New Boolean Condition]** \link Integer_IsOdd `Integer.IsOdd(info)`\endlink
+///     <p>
+///   }
 /// \table_end
 ///
 /// -----------------------------------------------------------------------------
@@ -283,7 +303,9 @@ const infomap integer_bools[] =  {{ "isequal",          INTEGER_IS_EQUAL },
                                   { "isgreater",        INTEGER_GREATER_THAN },
                                   { "isgreaterorequal", INTEGER_GREATER_OR_EQUAL },
                                   { "isless",           INTEGER_LESS_THAN },
-                                  { "islessorequal",    INTEGER_LESS_OR_EQUAL }};
+                                  { "islessorequal",    INTEGER_LESS_OR_EQUAL },
+                                  { "iseven",           INTEGER_EVEN },
+                                  { "isodd",            INTEGER_ODD }};
 
 
 /// \page modules__infolabels_boolean_conditions
@@ -1684,6 +1706,15 @@ const infomap system_labels[] =  {{ "hasnetwork",       SYSTEM_ETHERNET_LINK_ACT
 ///     @param id - the addon id
 ///     <p>
 ///   }
+///   \table_row3{   <b>`System.AddonIsEnabled(id)`</b>,
+///                  \anchor AddonIsEnabled
+///                  _boolean_,
+///     @return **True** if the specified addon is enabled on the system..
+///     @param id - The addon Id
+///     <p><hr>
+///     @skinning_v19 **[New Boolean Condition]** \link System_AddonIsEnabled `System.AddonIsEnabled(id)`\endlink
+///     <p>
+///   }
 ///   \table_row3{   <b>`System.HasCoreId(id)`</b>,
 ///                  \anchor System_HasCoreId
 ///                  _boolean_,
@@ -1718,6 +1749,7 @@ const infomap system_param[] =   {{ "hasalarm",         SYSTEM_HAS_ALARM },
                                   { "hascoreid",        SYSTEM_HAS_CORE_ID },
                                   { "setting",          SYSTEM_SETTING },
                                   { "hasaddon",         SYSTEM_HAS_ADDON },
+                                  { "addonisenabled",   SYSTEM_ADDON_IS_ENABLED },
                                   { "coreusage",        SYSTEM_GET_CORE_USAGE }};
 
 /// \page modules__infolabels_boolean_conditions
@@ -5687,6 +5719,22 @@ const infomap container_str[]  = {{ "property",         CONTAINER_PROPERTY },
 ///     @return The parental rating of the list item (PVR).
 ///     <p>
 ///   }
+///   \table_row3{   <b>`ListItem.CurrentItem`</b>,
+///                  \anchor ListItem_CurrentItem
+///                  _string_,
+///     @return The current index of the item in a container starting at 1.
+///     <p><hr>
+///     @skinning_v19 **[New Infolabel]** \link ListItem_CurrentItem `ListItem.CurrentItem`\endlink
+///     <p>
+///   }
+///   \table_row3{   <b>`ListItem.IsNew`</b>,
+///                  \anchor ListItem_IsNew
+///                  _boolean_,
+///     @return **True** if the item is new (for example, a Live TV show that will be first aired).
+///     <p><hr>
+///     @skinning_v19 **[New Infolabel]** \link ListItem_IsNew `ListItem.IsNew`\endlink
+///     <p>
+///   }
 /// \table_end
 ///
 /// -----------------------------------------------------------------------------
@@ -5877,7 +5925,9 @@ const infomap listitem_labels[]= {{ "thumb",            LISTITEM_THUMB },
                                   { "expirationtime",   LISTITEM_EXPIRATION_TIME },
                                   { "art",              LISTITEM_ART },
                                   { "property",         LISTITEM_PROPERTY },
-                                  { "parentalrating",   LISTITEM_PARENTAL_RATING }
+                                  { "parentalrating",   LISTITEM_PARENTAL_RATING },
+                                  { "currentitem",      LISTITEM_CURRENTITEM },
+                                  { "isnew",            LISTITEM_IS_NEW },
 };
 
 /// \page modules__infolabels_boolean_conditions
@@ -9102,13 +9152,13 @@ int CGUIInfoManager::TranslateSingleString(const std::string &strCondition, bool
       {
         int position = atoi(info[1].param().c_str());
         int value = TranslateMusicPlayerString(info[2].name); // musicplayer.position(foo).bar
-        return AddMultiInfo(CGUIInfo(value, 0, position));
+        return AddMultiInfo(CGUIInfo(value, 2, position)); // 2 => absolute (0 used for not set)
       }
       else if (info[1].name == "offset")
       {
         int position = atoi(info[1].param().c_str());
         int value = TranslateMusicPlayerString(info[2].name); // musicplayer.offset(foo).bar
-        return AddMultiInfo(CGUIInfo(value, 1, position));
+        return AddMultiInfo(CGUIInfo(value, 1, position)); // 1 => relative
       }
     }
     else if (info[0].name == "container")
@@ -9435,6 +9485,8 @@ bool CGUIInfoManager::GetMultiInfoBool(const CGUIInfo &info, int contextWindow, 
       case INTEGER_GREATER_OR_EQUAL:
       case INTEGER_LESS_THAN:
       case INTEGER_LESS_OR_EQUAL:
+      case INTEGER_EVEN:
+      case INTEGER_ODD:
         {
           int integer = 0;
           if (!GetInt(integer, info.GetData1(), contextWindow, item))
@@ -9464,6 +9516,10 @@ bool CGUIInfoManager::GetMultiInfoBool(const CGUIInfo &info, int contextWindow, 
             bReturn = integer < info.GetData2();
           else if (condition == INTEGER_LESS_OR_EQUAL)
             bReturn = integer <= info.GetData2();
+          else if (condition == INTEGER_EVEN)
+            bReturn = integer % 2 == 0;
+          else if (condition == INTEGER_ODD)
+            bReturn = integer % 2 != 0;
         }
         break;
       case STRING_STARTS_WITH:
@@ -9602,9 +9658,6 @@ void CGUIInfoManager::SetCurrentItem(const CFileItem &item)
 
   m_infoProviders.InitCurrentItem(m_currentFile);
 
-  SetChanged();
-  NotifyObservers(ObservableMessageCurrentItem);
-  // @todo this should be handled by one of the observers above and forwarded
   CServiceBroker::GetAnnouncementManager()->Announce(ANNOUNCEMENT::Info, "xbmc", "OnChanged");
 }
 
@@ -9768,14 +9821,14 @@ std::string CGUIInfoManager::GetMultiInfoItemLabel(const CFileItem *item, int co
       case LISTITEM_PROGRAM_COUNT:
         return StringUtils::Format("%i", item->m_iprogramCount);
       case LISTITEM_ACTUAL_ICON:
-        return item->GetIconImage();
+        return item->GetArt("icon");
       case LISTITEM_ICON:
       {
         std::string strThumb = item->GetArt("thumb");
         if (strThumb.empty())
-          strThumb = item->GetIconImage();
+          strThumb = item->GetArt("icon");
         if (fallback)
-          *fallback = item->GetIconImage();
+          *fallback = item->GetArt("icon");
         return strThumb;
       }
       case LISTITEM_ART:
@@ -9825,6 +9878,8 @@ std::string CGUIInfoManager::GetMultiInfoItemLabel(const CFileItem *item, int co
           return item->m_dateTime.GetAsLocalizedDate(true);
         break;
       }
+      case LISTITEM_CURRENTITEM:
+        return std::to_string(item->GetCurrentItem());
     }
   }
 

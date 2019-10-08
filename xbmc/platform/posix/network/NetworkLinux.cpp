@@ -19,7 +19,8 @@
 #endif
 #ifdef TARGET_ANDROID
 #include "platform/android/bionic_supplement/bionic_supplement.h"
-#include "sys/system_properties.h"
+
+#include <sys/system_properties.h>
 #include <sys/wait.h>
 #endif
 #include <errno.h>
@@ -483,7 +484,7 @@ bool CNetworkLinux::PingHost(unsigned long remote_ip, unsigned int timeout_ms)
 #endif
 
   int status = -1;
-#if !defined (TARGET_DARWIN_IOS) // no system calls allowed since ios11
+#if !defined (TARGET_DARWIN_EMBEDDED) // no system calls allowed since ios11
   status = system (cmd_line);
 #endif
   int result = WIFEXITED(status) ? WEXITSTATUS(status) : -1;

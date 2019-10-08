@@ -7,6 +7,7 @@
  */
 
 #include "AndroidPowerSyscall.h"
+
 #include "platform/android/activity/XBMCApp.h"
 
 IPowerSyscall* CAndroidPowerSyscall::CreateInstance()
@@ -18,12 +19,6 @@ void CAndroidPowerSyscall::Register()
 {
   IPowerSyscall::RegisterPowerSyscall(CAndroidPowerSyscall::CreateInstance);
 }
-
-CAndroidPowerSyscall::CAndroidPowerSyscall()
-{ }
-
-CAndroidPowerSyscall::~CAndroidPowerSyscall()
-{ }
 
 int CAndroidPowerSyscall::BatteryLevel(void)
 {

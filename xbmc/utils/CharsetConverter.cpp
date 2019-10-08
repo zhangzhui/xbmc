@@ -8,23 +8,19 @@
 
 #include "CharsetConverter.h"
 
-#include <algorithm>
-
-#ifndef TARGET_FREEBSD
-#include <iconv.h>
-#elif TARGET_FREEBSD
-#include "/usr/include/iconv.h"
-#endif
-#include <fribidi.h>
-
-#include "guilib/LocalizeStrings.h"
 #include "LangInfo.h"
+#include "guilib/LocalizeStrings.h"
 #include "log.h"
+#include "settings/Settings.h"
 #include "settings/lib/Setting.h"
 #include "settings/lib/SettingDefinitions.h"
-#include "settings/Settings.h"
 #include "utils/StringUtils.h"
 #include "utils/Utf8Utils.h"
+
+#include <algorithm>
+
+#include <fribidi.h>
+#include <iconv.h>
 
 #ifdef WORDS_BIGENDIAN
   #define ENDIAN_SUFFIX "BE"
@@ -576,7 +572,7 @@ std::vector<std::string> CCharsetConverter::getCharsetLabels()
 {
   std::vector<std::string> lab;
   for(SCharsetMapping* c = g_charsets; c->charset; c++)
-    lab.push_back(c->caption);
+    lab.emplace_back(c->caption);
 
   return lab;
 }
@@ -850,7 +846,7 @@ void CCharsetConverter::SettingOptionsCharsetsFiller(SettingConstPtr setting, st
   std::vector<std::string> vecCharsets = g_charsetConverter.getCharsetLabels();
   sort(vecCharsets.begin(), vecCharsets.end(), sortstringbyname());
 
-  list.push_back(StringSettingOption(g_localizeStrings.Get(13278), "DEFAULT")); // "Default"
+  list.emplace_back(g_localizeStrings.Get(13278), "DEFAULT"); // "Default"
   for (int i = 0; i < (int) vecCharsets.size(); ++i)
-    list.push_back(StringSettingOption(vecCharsets[i], g_charsetConverter.getCharsetNameByLabel(vecCharsets[i])));
+    list.emplace_back(vecCharsets[i], g_charsetConverter.getCharsetNameByLabel(vecCharsets[i]));
 }

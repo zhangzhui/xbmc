@@ -26,7 +26,7 @@ else
   DEPENDS+=samba libcdio
 endif
 
-ifeq ($(OS),ios)
+ifeq ($(OS),darwin_embedded)
   EXCLUDED_DEPENDS = libcec libusb
   ifeq ($(TARGET_PLATFORM),appletvos)
     DEPENDS += boblight
@@ -43,7 +43,7 @@ ifeq ($(OS),android)
   EXCLUDED_DEPENDS = libcec libusb
   DEPENDS += dummy-libxbmc libuuid libandroidjni
   PYMODULE_DEPS = dummy-libxbmc
-  CROSSGUID_DEPS = libuuid
+  LIBUUID = libuuid
 endif
 
 DEPENDS := $(filter-out $(EXCLUDED_DEPENDS),$(DEPENDS))
@@ -71,7 +71,7 @@ ifeq ($(OS),linux)
   endif
   DEPENDS += alsa-lib
   ALSA_LIB = alsa-lib
-  CROSSGUID_DEPS = libuuid
+  LIBUUID = libuuid
   ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi gbm))
     DEPENDS += libxkbcommon libinput libudev libevdev mtdev
   endif
@@ -87,7 +87,7 @@ all: .installed-$(PLATFORM)
 
 gettext: $(ICONV)
 libgcrypt: libgpg-error
-fontconfig: freetype2 expat $(ICONV)
+fontconfig: freetype2 expat $(ICONV) $(LIBUUID)
 curl: openssl nghttp2
 libass: fontconfig fribidi libpng freetype2 expat $(ICONV)
 libmicrohttpd: gnutls libgcrypt libgpg-error
@@ -95,7 +95,7 @@ python27: expat gettext libxml2 sqlite3 openssl libffi
 libcdio: $(ICONV)
 libcdio-gplv3: $(ICONV)
 libplist: $(ZLIB)
-libbluray: $(ICONV) libxml2
+libbluray: fontconfig freetype2 $(ICONV) libxml2
 mariadb: openssl $(ICONV) $(ZLIB)
 libzip: $(ZLIB)
 libpng: $(ZLIB)
@@ -108,7 +108,7 @@ pythonmodule-setuptools: $(PYMODULE_DEPS) python27
 libxslt: libgcrypt libxml2
 ffmpeg: $(ICONV) $(ZLIB) bzip2 $(FFMPEG_DEPENDS)
 libcec: p8-platform
-crossguid: $(CROSSGUID_DEPS)
+crossguid: $(LIBUUID)
 libdvdnav: libdvdread
 libdvdread: libdvdcss
 wayland: expat libffi

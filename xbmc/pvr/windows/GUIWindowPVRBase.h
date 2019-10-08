@@ -8,10 +8,8 @@
 
 #pragma once
 
-#include "pvr/PVRTypes.h"
 #include "threads/CriticalSection.h"
 #include "threads/SystemClock.h"
-#include "utils/Observer.h"
 #include "windows/GUIMediaWindow.h"
 
 #include <atomic>
@@ -38,19 +36,22 @@ class CGUIDialogProgressBarHandle;
 
 namespace PVR
 {
+  enum class PVREvent;
+
   enum EPGSelectAction
   {
-    EPG_SELECT_ACTION_CONTEXT_MENU   = 0,
-    EPG_SELECT_ACTION_SWITCH         = 1,
-    EPG_SELECT_ACTION_INFO           = 2,
-    EPG_SELECT_ACTION_RECORD         = 3,
+    EPG_SELECT_ACTION_CONTEXT_MENU = 0,
+    EPG_SELECT_ACTION_SWITCH = 1,
+    EPG_SELECT_ACTION_INFO = 2,
+    EPG_SELECT_ACTION_RECORD = 3,
     EPG_SELECT_ACTION_PLAY_RECORDING = 4,
-    EPG_SELECT_ACTION_SMART_SELECT   = 5
+    EPG_SELECT_ACTION_SMART_SELECT = 5
   };
 
+  class CPVRChannelGroup;
   class CGUIPVRChannelGroupsSelector;
 
-  class CGUIWindowPVRBase : public CGUIMediaWindow, public Observer
+  class CGUIWindowPVRBase : public CGUIMediaWindow
   {
   public:
     ~CGUIWindowPVRBase(void) override;
@@ -58,13 +59,19 @@ namespace PVR
     void OnInitWindow(void) override;
     void OnDeinitWindow(int nextWindowID) override;
     bool OnMessage(CGUIMessage& message) override;
-    bool Update(const std::string &strDirectory, bool updateFilterPath = true) override;
+    bool Update(const std::string& strDirectory, bool updateFilterPath = true) override;
     void UpdateButtons(void) override;
-    bool OnAction(const CAction &action) override;
+    bool OnAction(const CAction& action) override;
     bool OnBack(int actionID) override;
-    void Notify(const Observable &obs, const ObservableMessage msg) override;
     void SetInvalid() override;
     bool CanBeActivated() const override;
+
+    /*!
+     * @brief CEventStream callback for PVR events.
+     * @param event The event.
+     */
+    void Notify(const PVREvent& event);
+    virtual void NotifyEvent(const PVREvent& event);
 
     /*!
      * @brief Refresh window content.
@@ -72,8 +79,12 @@ namespace PVR
      */
     bool DoRefresh(void) { return Refresh(true); }
 
+    bool ActivatePreviousChannelGroup();
+    bool ActivateNextChannelGroup();
+    bool OpenChannelGroupSelectionDialog();
+
   protected:
-    CGUIWindowPVRBase(bool bRadio, int id, const std::string &xmlFile);
+    CGUIWindowPVRBase(bool bRadio, int id, const std::string& xmlFile);
 
     virtual std::string GetDirectoryPath(void) = 0;
 
@@ -89,14 +100,14 @@ namespace PVR
      * @brief Get the channel group for this window.
      * @return the group or null, if no group set.
      */
-   CPVRChannelGroupPtr GetChannelGroup(void);
+   std::shared_ptr<CPVRChannelGroup> GetChannelGroup(void);
 
     /*!
      * @brief Set a new channel group, start listening to this group, optionally update window content.
      * @param group The new group.
      * @param bUpdate if true, window content will be updated.
      */
-    void SetChannelGroup(CPVRChannelGroupPtr &&group, bool bUpdate = true);
+    void SetChannelGroup(std::shared_ptr<CPVRChannelGroup> &&group, bool bUpdate = true);
 
     virtual void UpdateSelectedItemPath();
 
@@ -109,14 +120,12 @@ namespace PVR
     std::atomic_bool m_bUpdating = {false};
 
   private:
-    bool OpenChannelGroupSelectionDialog(void);
-
     /*!
      * @brief Show or update the progress dialog.
      * @param strText The current status.
      * @param iProgress The current progress in %.
      */
-    void ShowProgressDialog(const std::string &strText, int iProgress);
+    void ShowProgressDialog(const std::string& strText, int iProgress);
 
     /*!
      * @brief Hide the progress dialog if it's visible.
@@ -124,8 +133,8 @@ namespace PVR
     void HideProgressDialog(void);
 
     std::unique_ptr<CGUIPVRChannelGroupsSelector> m_channelGroupsSelector;
-    CPVRChannelGroupPtr m_channelGroup;
+    std::shared_ptr<CPVRChannelGroup> m_channelGroup;
     XbmcThreads::EndTime m_refreshTimeout;
-    CGUIDialogProgressBarHandle *m_progressHandle; /*!< progress dialog that is displayed while the pvr manager is loading */
+    CGUIDialogProgressBarHandle* m_progressHandle; /*!< progress dialog that is displayed while the pvr manager is loading */
   };
 }

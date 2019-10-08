@@ -8,39 +8,39 @@
 
 #include "GUIDialogSubtitleSettings.h"
 
-#include <string>
-#include <vector>
-
-#include "addons/VFSEntry.h"
-#include "addons/Skin.h"
 #include "Application.h"
+#include "FileItem.h"
+#include "GUIDialogSubtitles.h"
+#include "GUIPassword.h"
 #include "ServiceBroker.h"
+#include "URL.h"
+#include "addons/Skin.h"
+#include "addons/VFSEntry.h"
 #include "cores/IPlayer.h"
 #include "dialogs/GUIDialogFileBrowser.h"
 #include "dialogs/GUIDialogYesNo.h"
-#include "FileItem.h"
 #include "filesystem/File.h"
-#include "GUIPassword.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
 #include "profiles/ProfileManager.h"
 #include "settings/AdvancedSettings.h"
-#include "settings/lib/Setting.h"
-#include "settings/lib/SettingDefinitions.h"
-#include "settings/lib/SettingsManager.h"
 #include "settings/MediaSettings.h"
 #include "settings/MediaSourceSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "URL.h"
+#include "settings/lib/Setting.h"
+#include "settings/lib/SettingDefinitions.h"
+#include "settings/lib/SettingsManager.h"
 #include "utils/LangCodeExpander.h"
-#include "utils/log.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/Variant.h"
+#include "utils/log.h"
 #include "video/VideoDatabase.h"
-#include "GUIDialogSubtitles.h"
+
+#include <string>
+#include <vector>
 
 #define SETTING_SUBTITLE_ENABLE                "subtitles.enable"
 #define SETTING_SUBTITLE_DELAY                 "subtitles.delay"
@@ -332,13 +332,13 @@ void CGUIDialogSubtitleSettings::SubtitleStreamsOptionFiller(SettingConstPtr set
     strItem += FormatFlags(info.flags);
     strItem += StringUtils::Format(" (%i/%i)", i + 1, subtitleStreamCount);
 
-    list.push_back(IntegerSettingOption(strItem, i));
+    list.emplace_back(strItem, i);
   }
 
   // no subtitle streams - just add a "None" entry
   if (list.empty())
   {
-    list.push_back(IntegerSettingOption(g_localizeStrings.Get(231), -1));
+    list.emplace_back(g_localizeStrings.Get(231), -1);
     current = -1;
   }
 }

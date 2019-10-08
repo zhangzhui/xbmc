@@ -9,18 +9,15 @@
 #include "VaapiEGL.h"
 
 #include "cores/VideoPlayer/DVDCodecs/Video/VAAPI.h"
-#include <va/va_drmcommon.h>
-#include <drm_fourcc.h>
-#include "utils/log.h"
 #include "utils/EGLUtils.h"
+#include "utils/log.h"
+
+#include <drm_fourcc.h>
+#include <va/va_drmcommon.h>
 
 #define HAVE_VAEXPORTSURFACHEHANDLE VA_CHECK_VERSION(1, 1, 0)
 
 using namespace VAAPI;
-
-CVaapi1Texture::CVaapi1Texture()
-{
-}
 
 void CVaapi1Texture::Init(InteropInfo &interop)
 {
@@ -538,7 +535,7 @@ bool CVaapi2Texture::Map(CVaapiRenderPicture* pic)
       attribs.Get());
     if (!texture->eglImage)
     {
-      CEGLUtils::LogError("Failed to import VA DRM surface into EGL image");
+      CEGLUtils::Log(LOGERROR, "Failed to import VA DRM surface into EGL image");
       return false;
     }
 

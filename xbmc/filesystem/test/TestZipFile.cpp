@@ -6,41 +6,25 @@
  *  See LICENSES/README.md for more information.
  */
 
+#include "FileItem.h"
 #include "ServiceBroker.h"
+#include "URL.h"
 #include "filesystem/Directory.h"
 #include "filesystem/File.h"
-#include "utils/StringUtils.h"
-#include "utils/URIUtils.h"
-#include "FileItem.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "test/TestUtils.h"
-#include "URL.h"
+#include "utils/StringUtils.h"
+#include "utils/URIUtils.h"
 
 #include <errno.h>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 class TestZipFile : public testing::Test
 {
 protected:
-  TestZipFile()
-  {
-    /* Add default settings for locale.
-     * Settings here are taken from CGUISettings::Initialize()
-     */
-    //! @todo implement
-    /*
-    CSettingsCategory *loc = CServiceBroker::GetSettingsComponent()->GetSettings()->AddCategory(7, "locale", 14090);
-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddString(loc, CSettings::SETTING_LOCALE_LANGUAGE,248,"english",
-                            SPIN_CONTROL_TEXT);
-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddString(loc, CSettings::SETTING_LOCALE_COUNTRY, 20026, "USA",
-                            SPIN_CONTROL_TEXT);
-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddString(loc, CSettings::SETTING_LOCALE_CHARSET, 14091, "DEFAULT",
-                            SPIN_CONTROL_TEXT); // charset is set by the
-                                                // language file
-    */
-  }
+  TestZipFile() = default;
 
   ~TestZipFile() override
   {

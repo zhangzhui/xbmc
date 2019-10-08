@@ -6,17 +6,18 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include "gtest/gtest.h"
-#include "music/tags/TagLoaderTagLib.h"
 #include "music/tags/MusicInfoTag.h"
-#include <taglib/tpropertymap.h>
+#include "music/tags/TagLoaderTagLib.h"
+
+#include <gtest/gtest.h>
+#include <taglib/apetag.h>
+#include <taglib/asftag.h>
+#include <taglib/id3v1genres.h>
 #include <taglib/id3v1tag.h>
 #include <taglib/id3v2tag.h>
-#include <taglib/apetag.h>
-#include <taglib/xiphcomment.h>
-#include <taglib/id3v1genres.h>
-#include <taglib/asftag.h>
 #include <taglib/mp4tag.h>
+#include <taglib/tpropertymap.h>
+#include <taglib/xiphcomment.h>
 
 using namespace TagLib;
 using namespace MUSIC_INFO;
@@ -179,49 +180,49 @@ TEST_F(TestTagLoaderTagLib, SplitMBID)
   std::vector<std::string> values;
   EXPECT_TRUE(lib.SplitMBID(values).empty());
 
-  values.push_back("1");
-  values.push_back("2");
+  values.emplace_back("1");
+  values.emplace_back("2");
   EXPECT_EQ(values, lib.SplitMBID(values));
 
   // length 1 and invalid should return empty
   values.clear();
-  values.push_back("invalid");
+  values.emplace_back("invalid");
   EXPECT_TRUE(lib.SplitMBID(values).empty());
 
   // length 1 and valid should return the valid id
   values.clear();
-  values.push_back("0383dadf-2a4e-4d10-a46a-e9e041da8eb3");
+  values.emplace_back("0383dadf-2a4e-4d10-a46a-e9e041da8eb3");
   EXPECT_EQ(lib.SplitMBID(values), values);
 
   // case shouldn't matter
   values.clear();
-  values.push_back("0383DaDf-2A4e-4d10-a46a-e9e041da8eb3");
+  values.emplace_back("0383DaDf-2A4e-4d10-a46a-e9e041da8eb3");
   EXPECT_EQ(lib.SplitMBID(values).size(), 1u);
   EXPECT_STREQ(lib.SplitMBID(values)[0].c_str(), "0383dadf-2a4e-4d10-a46a-e9e041da8eb3");
 
   // valid with some stuff off the end or start should return valid
   values.clear();
-  values.push_back("foo0383dadf-2a4e-4d10-a46a-e9e041da8eb3 blah");
+  values.emplace_back("foo0383dadf-2a4e-4d10-a46a-e9e041da8eb3 blah");
   EXPECT_EQ(lib.SplitMBID(values).size(), 1u);
   EXPECT_STREQ(lib.SplitMBID(values)[0].c_str(), "0383dadf-2a4e-4d10-a46a-e9e041da8eb3");
 
   // two valid with various separators
   values.clear();
-  values.push_back("0383dadf-2a4e-4d10-a46a-e9e041da8eb3;53b106e7-0cc6-42cc-ac95-ed8d30a3a98e");
+  values.emplace_back("0383dadf-2a4e-4d10-a46a-e9e041da8eb3;53b106e7-0cc6-42cc-ac95-ed8d30a3a98e");
   std::vector<std::string> result = lib.SplitMBID(values);
   EXPECT_EQ(result.size(), 2u);
   EXPECT_STREQ(result[0].c_str(), "0383dadf-2a4e-4d10-a46a-e9e041da8eb3");
   EXPECT_STREQ(result[1].c_str(), "53b106e7-0cc6-42cc-ac95-ed8d30a3a98e");
 
   values.clear();
-  values.push_back("0383dadf-2a4e-4d10-a46a-e9e041da8eb3/53b106e7-0cc6-42cc-ac95-ed8d30a3a98e");
+  values.emplace_back("0383dadf-2a4e-4d10-a46a-e9e041da8eb3/53b106e7-0cc6-42cc-ac95-ed8d30a3a98e");
   result = lib.SplitMBID(values);
   EXPECT_EQ(result.size(), 2u);
   EXPECT_STREQ(result[0].c_str(), "0383dadf-2a4e-4d10-a46a-e9e041da8eb3");
   EXPECT_STREQ(result[1].c_str(), "53b106e7-0cc6-42cc-ac95-ed8d30a3a98e");
 
   values.clear();
-  values.push_back("0383dadf-2a4e-4d10-a46a-e9e041da8eb3 / 53b106e7-0cc6-42cc-ac95-ed8d30a3a98e; ");
+  values.emplace_back("0383dadf-2a4e-4d10-a46a-e9e041da8eb3 / 53b106e7-0cc6-42cc-ac95-ed8d30a3a98e; ");
   result = lib.SplitMBID(values);
   EXPECT_EQ(result.size(), 2u);
   EXPECT_STREQ(result[0].c_str(), "0383dadf-2a4e-4d10-a46a-e9e041da8eb3");

@@ -246,7 +246,7 @@
 				<width>830</width>
 				<height>262</height>
 				<font>font36_title</font>
-				<label>$INFO[ListItem.Title]</label>
+				<label>$INFO[ListItem.Title] $INFO[ListItem.Year,([COLOR grey],[/COLOR])]</label>
 				<visible>!PVR.HasEpg</visible>
 			</control>
 			<control type="label">
@@ -254,14 +254,22 @@
 				<width>830</width>
 				<height>262</height>
 				<font>font36_title</font>
-				<label>$INFO[ListItem.EpgEventTitle]</label>
+				<label>$INFO[ListItem.EpgEventTitle] $INFO[ListItem.Year,([COLOR grey],[/COLOR])]</label>
 				<visible>PVR.HasEpg</visible>
 			</control>
 			<control type="label">
 				<top>435</top>
-				<width>830</width>
+				<width>40%</width>
 				<height>70</height>
 				<label>[I]$VAR[SeasonEpisodeLabel]$INFO[ListItem.EpisodeName][/I]</label>
+			</control>
+			<control type="label">
+				<top>435</top>
+				<right>30</right>
+				<width>60%</width>
+				<height>70</height>
+				<align>right</align>
+				<label>$INFO[ListItem.Genre,[COLOR grey]$LOCALIZE[515]:[/COLOR] ]</label>
 			</control>
 			<control type="textbox">
 				<top>490</top>
@@ -461,11 +469,21 @@
 						<label>$INFO[ListItem.Label]</label>
 					</control>
 					<control type="image">
+						<visible>ListItem.IsNew</visible>
 						<left>6</left>
 						<top>35</top>
-						<width>20</width>
-						<height>20</height>
+						<width>16</width>
+						<height>16</height>
+						<aspectratio>keep</aspectratio>
+						<texture colordiffuse="button_focus">icons/pvr/premiere.png</texture>
+					</control>
+					<control type="image">
+						<left>6</left>
+						<top>35</top>
+						<width>16</width>
+						<height>16</height>
 						<texture>$VAR[PVRTimerIcon]</texture>
+						<animation effect="slide" start="0,0" end="19,0" condition="ListItem.IsNew">Conditional</animation>
 					</control>
 				</itemlayout>
 				<focusedlayout height="62" width="60">
@@ -498,11 +516,21 @@
 						<label>$INFO[ListItem.Label]</label>
 					</control>
 					<control type="image">
+						<visible>ListItem.IsNew</visible>
 						<left>6</left>
 						<top>35</top>
-						<width>20</width>
-						<height>20</height>
+						<width>16</width>
+						<height>16</height>
+						<aspectratio>keep</aspectratio>
+						<texture colordiffuse="button_focus">icons/pvr/premiere.png</texture>
+					</control>
+					<control type="image">
+						<left>6</left>
+						<top>35</top>
+						<width>16</width>
+						<height>16</height>
 						<texture>$VAR[PVRTimerIcon]</texture>
+						<animation effect="slide" start="0,0" end="19,0" condition="ListItem.IsNew">Conditional</animation>
 					</control>
 				</focusedlayout>
 			</control>

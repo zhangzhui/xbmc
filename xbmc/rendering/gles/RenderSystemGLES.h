@@ -8,12 +8,13 @@
 
 #pragma once
 
-#include "system_gl.h"
+#include "GLESShader.h"
 #include "rendering/RenderSystem.h"
 #include "utils/Color.h"
-#include "GLESShader.h"
 
 #include <array>
+
+#include "system_gl.h"
 
 enum ESHADERMETHOD
 {
@@ -35,7 +36,7 @@ class CRenderSystemGLES : public CRenderSystemBase
 {
 public:
   CRenderSystemGLES();
-  virtual ~CRenderSystemGLES();
+  ~CRenderSystemGLES() override = default;
 
   bool InitRenderSystem() override;
   bool DestroyRenderSystem() override;

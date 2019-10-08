@@ -18,9 +18,11 @@
  *
  */
 
-#include <cstring>
 #include "GIFDecoder.h"
+
 #include "GifHelper.h"
+
+#include <cstring>
 
 // returns true for gif files, otherwise returns false
 bool GIFDecoder::CanDecode(const std::string &filename)
@@ -84,5 +86,5 @@ void GIFDecoder::gifDestroyFN(void* user)
 
 void GIFDecoder::FillSupportedExtensions()
 {
-  m_supportedExtensions.push_back(".gif");
+  m_supportedExtensions.emplace_back(".gif");
 }

@@ -7,32 +7,33 @@
  */
 
 #include "OverlayRendererGUI.h"
-#include "settings/Settings.h"
-#include "settings/SettingsComponent.h"
 
-#include "filesystem/File.h"
 #include "ServiceBroker.h"
 #include "Util.h"
-#include "utils/URIUtils.h"
-#include "utils/StringUtils.h"
-#include "utils/log.h"
-#include "utils/ColorUtils.h"
-#include "guilib/GUIFontManager.h"
+#include "cores/VideoPlayer/DVDCodecs/Overlay/DVDOverlayText.h"
+#include "filesystem/File.h"
 #include "guilib/GUIFont.h"
+#include "guilib/GUIFontManager.h"
 #include "guilib/GUITextLayout.h"
 #include "guilib/GUITexture.h"
-#include "cores/VideoPlayer/DVDCodecs/Overlay/DVDOverlayText.h"
+#include "settings/Settings.h"
+#include "settings/SettingsComponent.h"
+#include "utils/ColorUtils.h"
+#include "utils/StringUtils.h"
+#include "utils/URIUtils.h"
+#include "utils/log.h"
 
 using namespace OVERLAY;
 
-static UTILS::Color colors[8] = { UTILS::COLOR::YELLOW,
+static UTILS::Color colors[9] = { UTILS::COLOR::YELLOW,
                                   UTILS::COLOR::WHITE,
                                   UTILS::COLOR::BLUE,
                                   UTILS::COLOR::BRIGHTGREEN,
                                   UTILS::COLOR::YELLOWGREEN,
                                   UTILS::COLOR::CYAN,
                                   UTILS::COLOR::LIGHTGREY,
-                                  UTILS::COLOR::GREY };
+                                  UTILS::COLOR::GREY,
+                                  UTILS::COLOR::DARKGREY };
 
 CGUITextLayout* COverlayText::GetFontLayout(const std::string &font, int color, int opacity, int height, int style,
                                             const std::string &fontcache, const std::string &fontbordercache)

@@ -8,24 +8,6 @@
 
 #pragma once
 
-#include <math.h>
-#include <pthread.h>
-#include <string>
-#include <vector>
-#include <map>
-#include <memory>
-
-#include <android/native_activity.h>
-
-#include <androidjni/Activity.h>
-#include <androidjni/AudioManager.h>
-#include <androidjni/BroadcastReceiver.h>
-#include <androidjni/SurfaceHolder.h>
-#include <androidjni/View.h>
-
-#include "threads/Event.h"
-#include "interfaces/IAnnouncer.h"
-
 #include "IActivityHandler.h"
 #include "IInputHandler.h"
 #include "JNIMainActivity.h"
@@ -33,8 +15,24 @@
 #include "JNIXBMCDisplayManagerDisplayListener.h"
 #include "JNIXBMCMainView.h"
 #include "JNIXBMCMediaSession.h"
+#include "interfaces/IAnnouncer.h"
 #include "platform/xbmc.h"
+#include "threads/Event.h"
 #include "utils/Geometry.h"
+
+#include <map>
+#include <math.h>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <android/native_activity.h>
+#include <androidjni/Activity.h>
+#include <androidjni/AudioManager.h>
+#include <androidjni/BroadcastReceiver.h>
+#include <androidjni/SurfaceHolder.h>
+#include <androidjni/View.h>
+#include <pthread.h>
 
 // forward declares
 class CJNIWakeLock;
@@ -88,19 +86,19 @@ class CXBMCApp
 {
 public:
   explicit CXBMCApp(ANativeActivity *nativeActivity);
-  virtual ~CXBMCApp();
+  ~CXBMCApp() override;
   static CXBMCApp* get() { return m_xbmcappinstance; }
 
   // IAnnouncer IF
-  virtual void Announce(ANNOUNCEMENT::AnnouncementFlag flag, const char *sender, const char *message, const CVariant &data) override;
+  void Announce(ANNOUNCEMENT::AnnouncementFlag flag, const char* sender, const char* message, const CVariant& data) override;
 
-  virtual void onReceive(CJNIIntent intent) override;
-  virtual void onNewIntent(CJNIIntent intent) override;
-  virtual void onActivityResult(int requestCode, int resultCode, CJNIIntent resultData) override;
-  virtual void onVolumeChanged(int volume) override;
+  void onReceive(CJNIIntent intent) override;
+  void onNewIntent(CJNIIntent intent) override;
+  void onActivityResult(int requestCode, int resultCode, CJNIIntent resultData) override;
+  void onVolumeChanged(int volume) override;
   virtual void onAudioFocusChange(int focusChange);
-  virtual void doFrame(int64_t frameTimeNanos) override;
-  virtual void onVisibleBehindCanceled() override;
+  void doFrame(int64_t frameTimeNanos) override;
+  void onVisibleBehindCanceled() override;
 
   // implementation of CJNIInputManagerInputDeviceListener
   void onInputDeviceAdded(int deviceId) override;

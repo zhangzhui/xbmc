@@ -13,10 +13,9 @@
 #include "addons/Addon.h"
 #include "addons/AddonManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "utils/StringUtils.h"
-
 #include "guilib/guiinfo/GUIInfo.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
+#include "utils/StringUtils.h"
 
 using namespace KODI::GUILIB::GUIINFO;
 
@@ -167,6 +166,14 @@ bool CAddonsGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
     {
       ADDON::AddonPtr addon;
       value = CServiceBroker::GetAddonMgr().GetAddon(info.GetData3(), addon) && addon;
+      return true;
+    }
+    case SYSTEM_ADDON_IS_ENABLED:
+    {
+      value = false;
+      ADDON::AddonPtr addon;
+      if (CServiceBroker::GetAddonMgr().GetAddon(info.GetData3(), addon))
+        value = !CServiceBroker::GetAddonMgr().IsAddonDisabled(info.GetData3());
       return true;
     }
   }

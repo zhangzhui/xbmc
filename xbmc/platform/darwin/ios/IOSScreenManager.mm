@@ -6,27 +6,25 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include <sys/resource.h>
-#include <signal.h>
+#import "IOSScreenManager.h"
+
+#include "Application.h"
+#import "IOSEAGLView.h"
+#import "IOSExternalTouchController.h"
 #include "ServiceBroker.h"
-#include "utils/log.h"
+#import "XBMCController.h"
+#include "cores/AudioEngine/Interfaces/AE.h"
 #include "settings/DisplaySettings.h"
 #include "threads/Event.h"
-#include "Application.h"
+#include "utils/log.h"
 #include "windowing/WinSystem.h"
 #include "windowing/ios/WinSystemIOS.h"
-#include "settings/DisplaySettings.h"
-#include "ServiceBroker.h"
-#include "cores/AudioEngine/Interfaces/AE.h"
-#include "platform/darwin/DarwinUtils.h"
+
+#include <signal.h>
 
 #import <Foundation/Foundation.h>
 #include <objc/runtime.h>
-
-#import "IOSScreenManager.h"
-#import "XBMCController.h"
-#import "IOSExternalTouchController.h"
-#import "IOSEAGLView.h"
+#include <sys/resource.h>
 
 const CGFloat timeSwitchingToExternalSecs = 6.0;
 const CGFloat timeSwitchingToInternalSecs = 2.0;
@@ -127,7 +125,6 @@ static CEvent screenChangeEvent;
   if([self willSwitchToInternal:screenIdx] && _externalTouchController != nil)
   {
     _lastTouchControllerOrientation = [[UIApplication sharedApplication] statusBarOrientation];
-    [_externalTouchController release];
     _externalTouchController = nil;
   }
 
@@ -225,15 +222,6 @@ static CEvent screenChangeEvent;
   {
     winSystem->UpdateResolutions();
   }
-}
-//--------------------------------------------------------------
-- (void) dealloc
-{
-  if(_externalTouchController != nil )
-  {
-    [_externalTouchController release];
-  }
-  [super dealloc];
 }
 //--------------------------------------------------------------
 + (id) sharedInstance

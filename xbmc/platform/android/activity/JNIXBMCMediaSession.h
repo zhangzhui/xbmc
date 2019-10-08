@@ -8,9 +8,8 @@
 
 #pragma once
 
-#include <androidjni/JNIBase.h>
-
 #include <androidjni/Intent.h>
+#include <androidjni/JNIBase.h>
 #include <androidjni/MediaMetadata.h>
 #include <androidjni/PlaybackState.h>
 
@@ -23,7 +22,7 @@ public:
   CJNIXBMCMediaSession();
   CJNIXBMCMediaSession(const CJNIXBMCMediaSession& other);
   CJNIXBMCMediaSession(const jni::jhobject &object) : CJNIBase(object) {}
-  virtual ~CJNIXBMCMediaSession();
+  ~CJNIXBMCMediaSession() override;
 
   static void RegisterNatives(JNIEnv* env);
 

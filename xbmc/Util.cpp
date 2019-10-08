@@ -191,7 +191,7 @@ std::string GetHomePath(const std::string& strTarget, std::string strPath)
 }
 #endif
 #if defined(TARGET_DARWIN)
-#if !defined(TARGET_DARWIN_IOS)
+#if !defined(TARGET_DARWIN_EMBEDDED)
 bool IsDirectoryValidRoot(std::string path)
 {
   path += "/system/settings/settings.xml";
@@ -215,7 +215,7 @@ std::string GetHomePath(const std::string& strTarget, std::string strPath)
       for (int n = strlen(given_path) - 1; given_path[n] != '/'; n--)
         given_path[n] = '\0';
 
-#if defined(TARGET_DARWIN_IOS)
+#if defined(TARGET_DARWIN_EMBEDDED)
       strcat(given_path, "/AppData/AppHome/");
 #else
       // Assume local path inside application bundle.
@@ -506,21 +506,6 @@ std::string CUtil::GetHomePath(std::string strTarget)
   auto strPath = CEnvironment::getenv(strTarget);
 
   return ::GetHomePath(strTarget, strPath);
-}
-
-bool CUtil::IsPVR(const std::string& strFile)
-{
-  return StringUtils::StartsWithNoCase(strFile, "pvr:");
-}
-
-bool CUtil::IsLiveTV(const std::string& strFile)
-{
-  return StringUtils::StartsWithNoCase(strFile, "pvr://channels");
-}
-
-bool CUtil::IsTVRecording(const std::string& strFile)
-{
-  return StringUtils::StartsWithNoCase(strFile, "pvr://recording");
 }
 
 bool CUtil::IsPicture(const std::string& strFile)
@@ -1509,7 +1494,7 @@ bool CUtil::SupportsWriteFileOperations(const std::string& strPath)
     return true;
   if (URIUtils::IsSmb(strPath))
     return true;
-  if (CUtil::IsTVRecording(strPath))
+  if (URIUtils::IsPVRRecording(strPath))
     return CPVRDirectory::SupportsWriteFileOperations(strPath);
   if (URIUtils::IsNfs(strPath))
     return true;
@@ -1527,7 +1512,9 @@ bool CUtil::SupportsWriteFileOperations(const std::string& strPath)
     for (const auto& addon : CServiceBroker::GetVFSAddonCache().GetAddonInstances())
     {
       const auto& info = addon->GetProtocolInfo();
-      if (info.type == url.GetProtocol() && info.supportWrite)
+      auto prots = StringUtils::Split(info.type, "|");
+      if (info.supportWrite &&
+          std::find(prots.begin(), prots.end(), url.GetProtocol()) != prots.end())
         return true;
     }
   }
@@ -1911,7 +1898,8 @@ void CUtil::ScanPathsForAssociatedItems(const std::string& videoName,
       continue;
 
     URIUtils::RemoveExtension(strCandidate);
-    if (StringUtils::StartsWithNoCase(strCandidate, videoName))
+    // NOTE: We don't know if one of videoName or strCandidate is URL-encoded and the other is not, so try both
+    if (StringUtils::StartsWithNoCase(strCandidate, videoName) || (StringUtils::StartsWithNoCase(strCandidate, CURL::Decode(videoName))))
     {
       if (URIUtils::IsRAR(pItem->GetPath()) || URIUtils::IsZIP(pItem->GetPath()))
         CUtil::ScanArchiveForAssociatedItems(pItem->GetPath(), "", item_exts, associatedFiles);
@@ -1960,7 +1948,10 @@ int CUtil::ScanArchiveForAssociatedItems(const std::string& strArchivePath,
 
     // check that the found filename matches the movie filename
     size_t fnl = videoNameNoExt.size();
-    if (fnl && !StringUtils::StartsWithNoCase(URIUtils::GetFileName(strPathInRar), videoNameNoExt))
+    // NOTE: We don't know if videoNameNoExt is URL-encoded, so try both
+    if (fnl &&
+      !(StringUtils::StartsWithNoCase(URIUtils::GetFileName(strPathInRar), videoNameNoExt) ||
+        StringUtils::StartsWithNoCase(URIUtils::GetFileName(strPathInRar), CURL::Decode(videoNameNoExt))))
       continue;
 
     for (auto ext : item_exts)

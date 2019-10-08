@@ -8,19 +8,19 @@
 
 #pragma once
 
+#include "AddonClass.h"
+#include "AddonString.h"
+#include "Alternative.h"
+#include "Dictionary.h"
+#include "FileItem.h"
+#include "InfoTagMusic.h"
+#include "InfoTagVideo.h"
+#include "ListItem.h"
+#include "Tuple.h"
+#include "commons/Exception.h"
+
 #include <map>
 #include <vector>
-
-#include "AddonClass.h"
-#include "Tuple.h"
-#include "Dictionary.h"
-#include "Alternative.h"
-#include "ListItem.h"
-#include "FileItem.h"
-#include "AddonString.h"
-#include "commons/Exception.h"
-#include "InfoTagVideo.h"
-#include "InfoTagMusic.h"
 
 
 namespace XBMCAddon
@@ -202,6 +202,10 @@ namespace XBMCAddon
       /// @brief \python_func{ setIconImage(iconImage) }
       ///-----------------------------------------------------------------------
       /// @python_v16 Deprecated. Use **setArt()**.
+      /// @python_v19 setIconImage results in nop and will be removed in future
+      /// versions. Use **setArt()**.
+      ///
+      /// @todo Remove in future kodi versions
       ///
       setIconImage(...);
 #else
@@ -214,6 +218,10 @@ namespace XBMCAddon
       /// @brief \python_func{ setThumbnailImage(thumbFilename) }
       ///-----------------------------------------------------------------------
       /// @python_v16 Deprecated. Use **setArt()**.
+      /// @python_v19 setThumbnailImage results in nop and will be removed in future
+      /// versions. Use **setArt()**.
+      ///
+      /// @todo Remove in future kodi versions
       ///
       setThumbnailImage(...);
 #else

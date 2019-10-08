@@ -10,6 +10,8 @@
 
 #include "settings/lib/ISettingCallback.h"
 
+#include <string>
+
 enum AppleRemoteOptions
 {
   APPLE_REMOTE_DISABLED    = 0,
@@ -23,7 +25,7 @@ class XBMCHelper : public ISettingCallback
  public:
   static XBMCHelper& GetInstance();
 
-  virtual bool OnSettingChanging(std::shared_ptr<const CSetting> setting) override;
+  bool OnSettingChanging(std::shared_ptr<const CSetting> setting) override;
 
   void Start();
   void Stop();

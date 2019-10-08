@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "pvr/PVRTypes.h"
 #include "pvr/channels/PVRChannelGroup.h"
 
 #include <memory>
@@ -30,8 +29,6 @@ namespace PVR
      */
     explicit CPVRChannelGroupInternal(bool bRadio);
 
-    explicit CPVRChannelGroupInternal(const CPVRChannelGroup &group);
-
     ~CPVRChannelGroupInternal(void) override;
 
     /**
@@ -44,24 +41,26 @@ namespace PVR
      * @brief Callback for add-ons to update a channel.
      * @param channel The updated channel.
      * @param channelNumber A new channel number for the channel.
+     * @param iOrder The value denoting the order of this member in the group, 0 if unknown and needs to be generated
+     * @param clientChannelNumber The client channel number of the channel to add. (optional)
      * @return The new/updated channel.
      */
-    CPVRChannelPtr UpdateFromClient(const CPVRChannelPtr &channel, const CPVRChannelNumber &channelNumber);
+    std::shared_ptr<CPVRChannel> UpdateFromClient(const std::shared_ptr<CPVRChannel>& channel, const CPVRChannelNumber& channelNumber, int iOrder, const CPVRChannelNumber& clientChannelNumber = {});
 
     /*!
      * @see CPVRChannelGroup::IsGroupMember
      */
-    bool IsGroupMember(const CPVRChannelPtr &channel) const override;
+    bool IsGroupMember(const std::shared_ptr<CPVRChannel>& channel) const override;
 
     /*!
      * @see CPVRChannelGroup::AddToGroup
      */
-    bool AddToGroup(const CPVRChannelPtr &channel, const CPVRChannelNumber &channelNumber, bool bUseBackendChannelNumbers) override;
+    bool AddToGroup(const std::shared_ptr<CPVRChannel>& channel, const CPVRChannelNumber& channelNumber, int iOrder, bool bUseBackendChannelNumbers, const CPVRChannelNumber& clientChannelNumber = {}) override;
 
     /*!
      * @see CPVRChannelGroup::RemoveFromGroup
      */
-    bool RemoveFromGroup(const CPVRChannelPtr &channel) override;
+    bool RemoveFromGroup(const std::shared_ptr<CPVRChannel>& channel) override;
 
     /*!
      * @brief Check whether the group name is still correct after the language setting changed.
@@ -113,14 +112,14 @@ namespace PVR
      * @param bUseBackendChannelNumbers True, if channel numbers from backends shall be used.
      * @return True if everything went well, false otherwise.
      */
-    bool AddAndUpdateChannels(const CPVRChannelGroup &channels, bool bUseBackendChannelNumbers) override;
+    bool AddAndUpdateChannels(const CPVRChannelGroup& channels, bool bUseBackendChannelNumbers) override;
 
     /*!
      * @brief Remove deleted channels from this group.
      * @param channels The new channels to use for this group.
      * @return The removed channels.
      */
-    std::vector<CPVRChannelPtr> RemoveDeletedChannels(const CPVRChannelGroup &channels) override;
+    std::vector<std::shared_ptr<CPVRChannel>> RemoveDeletedChannels(const CPVRChannelGroup& channels) override;
 
     /*!
      * @brief Refresh the channel list from the clients.

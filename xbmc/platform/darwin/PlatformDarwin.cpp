@@ -7,18 +7,10 @@
  */
 
 #include "PlatformDarwin.h"
-#include <stdlib.h>
+
 #include "filesystem/SpecialProtocol.h"
 
-CPlatformDarwin::CPlatformDarwin()
-{
-
-}
-
-CPlatformDarwin::~CPlatformDarwin()
-{
-
-}
+#include <stdlib.h>
 
 void CPlatformDarwin::Init()
 {

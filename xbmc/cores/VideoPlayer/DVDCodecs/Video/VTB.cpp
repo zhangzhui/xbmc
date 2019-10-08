@@ -6,7 +6,6 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include "platform/darwin/DarwinUtils.h"
 #include "cores/VideoPlayer/Process/ProcessInfo.h"
 #include "DVDVideoCodec.h"
 #include "DVDCodecs/DVDCodecUtils.h"
@@ -61,9 +60,9 @@ CVPixelBufferRef CVideoBufferVTB::GetPB()
 class VTB::CVideoBufferPoolVTB : public IVideoBufferPool
 {
 public:
-  virtual ~CVideoBufferPoolVTB();
-  virtual void Return(int id) override;
-  virtual CVideoBuffer* Get() override;
+  ~CVideoBufferPoolVTB() override;
+  void Return(int id) override;
+  CVideoBuffer* Get() override;
 
 protected:
   CCriticalSection m_critSection;

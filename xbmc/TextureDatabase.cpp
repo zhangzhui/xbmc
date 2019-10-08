@@ -7,13 +7,14 @@
  */
 
 #include "TextureDatabase.h"
-#include "utils/log.h"
+
+#include "URL.h"
 #include "XBDateTime.h"
 #include "dbwrappers/dataset.h"
-#include "URL.h"
+#include "utils/DatabaseUtils.h"
 #include "utils/StringUtils.h"
 #include "utils/Variant.h"
-#include "utils/DatabaseUtils.h"
+#include "utils/log.h"
 
 enum TextureField
 {
@@ -104,7 +105,7 @@ void CTextureRule::GetAvailableFields(std::vector<std::string> &fieldList)
 {
   // start at 1 to skip TF_None
   for (unsigned int i = 1; i < NUM_FIELDS; i++)
-    fieldList.push_back(fields[i].string);
+    fieldList.emplace_back(fields[i].string);
 }
 
 std::string CTextureUtils::GetWrappedImageURL(const std::string &image, const std::string &type, const std::string &options)
@@ -456,7 +457,6 @@ void CTextureDatabase::SetTextureForPath(const std::string &url, const std::stri
   {
     CLog::Log(LOGERROR, "%s failed on url '%s'", __FUNCTION__, url.c_str());
   }
-  return;
 }
 
 void CTextureDatabase::ClearTextureForPath(const std::string &url, const std::string &type)
@@ -475,7 +475,6 @@ void CTextureDatabase::ClearTextureForPath(const std::string &url, const std::st
   {
     CLog::Log(LOGERROR, "%s failed on url '%s'", __FUNCTION__, url.c_str());
   }
-  return;
 }
 
 CDatabaseQueryRule *CTextureDatabase::CreateRule() const

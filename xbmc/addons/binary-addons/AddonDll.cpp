@@ -10,6 +10,7 @@
 
 #include "addons/AddonStatusHandler.h"
 #include "GUIUserMessages.h"
+#include "addons/binary-addons/BinaryAddonBase.h"
 #include "addons/settings/AddonSettings.h"
 #include "addons/settings/GUIDialogAddonSettings.h"
 #include "events/EventLog.h"
@@ -41,8 +42,8 @@ namespace ADDON
 
 std::vector<ADDON_GET_INTERFACE_FN> CAddonDll::s_registeredInterfaces;
 
-CAddonDll::CAddonDll(CAddonInfo addonInfo, BinaryAddonBasePtr addonBase)
-  : CAddon(std::move(addonInfo)),
+CAddonDll::CAddonDll(const AddonInfoPtr& addonInfo, BinaryAddonBasePtr addonBase)
+  : CAddon(addonInfo, addonBase->MainType()),
     m_pHelpers(nullptr),
     m_binaryAddonBase(addonBase),
     m_pDll(nullptr),
@@ -51,8 +52,8 @@ CAddonDll::CAddonDll(CAddonInfo addonInfo, BinaryAddonBasePtr addonBase)
 {
 }
 
-CAddonDll::CAddonDll(CAddonInfo addonInfo)
-  : CAddon(std::move(addonInfo)),
+CAddonDll::CAddonDll(const AddonInfoPtr& addonInfo, TYPE addonType)
+  : CAddon(addonInfo, addonType),
     m_pHelpers(nullptr),
     m_binaryAddonBase(nullptr),
     m_pDll(nullptr),
@@ -372,6 +373,16 @@ bool CAddonDll::DllLoaded(void) const
   return m_pDll != NULL;
 }
 
+AddonVersion CAddonDll::GetTypeVersionDll(int type) const
+{
+  return AddonVersion(m_pDll ? m_pDll->GetAddonTypeVersion(type) : nullptr);
+}
+
+AddonVersion CAddonDll::GetTypeMinVersionDll(int type) const
+{
+  return AddonVersion(m_pDll ? m_pDll->GetAddonTypeMinVersion(type) : nullptr);
+}
+
 ADDON_STATUS CAddonDll::GetStatus()
 {
   return m_pDll->GetStatus();
@@ -469,9 +480,9 @@ bool CAddonDll::CheckAPIVersion(int type)
     : addonVersion;
 
   /* Check the global usage from addon
-   * if not used from addon becomes "0.0.0" returned
+   * if not used from addon, empty version is returned
    */
-  if (type <= ADDON_GLOBAL_MAX && addonVersion == AddonVersion("0.0.0"))
+  if (type <= ADDON_GLOBAL_MAX && addonVersion.empty())
     return true;
 
   /* If a instance (not global) version becomes checked must be the version
@@ -503,12 +514,12 @@ bool CAddonDll::UpdateSettingInActiveDialog(const char* id, const std::string& v
     return false;
 
   CGUIDialogAddonSettings* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogAddonSettings>(WINDOW_DIALOG_ADDON_SETTINGS);
-  if (dialog->GetCurrentAddonID() != m_addonInfo.ID())
+  if (dialog->GetCurrentAddonID() != m_addonInfo->ID())
     return false;
 
   CGUIMessage message(GUI_MSG_SETTING_UPDATED, 0, 0);
   std::vector<std::string> params;
-  params.push_back(id);
+  params.emplace_back(id);
   params.push_back(value);
   message.SetStringParams(params);
   CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(message, WINDOW_DIALOG_ADDON_SETTINGS);

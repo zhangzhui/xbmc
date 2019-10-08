@@ -7,6 +7,7 @@
  */
 
 #include "GUIFadeLabelControl.h"
+
 #include "GUIMessage.h"
 #include "utils/Random.h"
 
@@ -58,7 +59,7 @@ void CGUIFadeLabelControl::SetInfo(const std::vector<GUIINFO::CGUIInfoLabel> &in
 
 void CGUIFadeLabelControl::AddLabel(const std::string &label)
 {
-  m_infoLabels.push_back(GUIINFO::CGUIInfoLabel(label, "", GetParentID()));
+  m_infoLabels.emplace_back(label, "", GetParentID());
 }
 
 void CGUIFadeLabelControl::Process(unsigned int currentTime, CDirtyRegionList &dirtyregions)

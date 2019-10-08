@@ -10,6 +10,7 @@
 
 #include "settings/lib/ISettingCallback.h"
 #include "threads/CriticalSection.h"
+
 #include <atomic>
 #include <memory>
 #include <string>
@@ -28,7 +29,7 @@ class CActiveAESettings : public ISettingCallback
 {
 public:
   CActiveAESettings(CActiveAE &ae);
-  virtual ~CActiveAESettings();
+  ~CActiveAESettings() override;
 
   void OnSettingChanged(std::shared_ptr<const CSetting> setting) override;
 

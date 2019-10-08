@@ -11,6 +11,10 @@
 #include <array>
 
 #if defined(HAS_GL)
+// always define GL_GLEXT_PROTOTYPES before include gl headers
+#if !defined(GL_GLEXT_PROTOTYPES)
+#define GL_GLEXT_PROTOTYPES
+#endif
 #include <GL/gl.h>
 #elif defined(HAS_GLES)
 #include <GLES2/gl2.h>
@@ -57,7 +61,7 @@ public:
 class CVaapi1Texture : public CVaapiTexture
 {
 public:
-  CVaapi1Texture();
+  CVaapi1Texture() = default;
 
   bool Map(CVaapiRenderPicture *pic) override;
   void Unmap() override;

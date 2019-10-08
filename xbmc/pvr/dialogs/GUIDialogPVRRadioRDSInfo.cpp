@@ -15,6 +15,7 @@
 #include "guilib/GUITextBox.h"
 #include "guilib/LocalizeStrings.h"
 #include "pvr/PVRManager.h"
+#include "pvr/PVRPlaybackState.h"
 #include "pvr/channels/PVRChannel.h"
 #include "pvr/channels/PVRRadioRDSInfoTag.h"
 
@@ -63,7 +64,7 @@ bool CGUIDialogPVRRadioRDSInfo::OnMessage(CGUIMessage& message)
     }
     else if (iControl == SPIN_CONTROL_INFO)
     {
-      const std::shared_ptr<CPVRChannel> channel = CServiceBroker::GetPVRManager().GetPlayingChannel();
+      const std::shared_ptr<CPVRChannel> channel = CServiceBroker::GetPVRManager().PlaybackState()->GetPlayingChannel();
       if (!channel)
         return false;
 
@@ -71,11 +72,11 @@ bool CGUIDialogPVRRadioRDSInfo::OnMessage(CGUIMessage& message)
       if (!currentRDS)
         return false;
 
-      const CGUISpinControl *spin = static_cast<CGUISpinControl*>(GetControl(SPIN_CONTROL_INFO));
+      const CGUISpinControl* spin = static_cast<CGUISpinControl*>(GetControl(SPIN_CONTROL_INFO));
       if (!spin)
         return false;
 
-      CGUITextBox *textbox = static_cast<CGUITextBox*>(GetControl(TEXT_INFO));
+      CGUITextBox* textbox = static_cast<CGUITextBox*>(GetControl(TEXT_INFO));
       if (!textbox)
         return false;
 
@@ -157,7 +158,7 @@ void CGUIDialogPVRRadioRDSInfo::InitInfoControls()
 
 void CGUIDialogPVRRadioRDSInfo::UpdateInfoControls()
 {
-  const std::shared_ptr<CPVRChannel> channel = CServiceBroker::GetPVRManager().GetPlayingChannel();
+  const std::shared_ptr<CPVRChannel> channel = CServiceBroker::GetPVRManager().PlaybackState()->GetPlayingChannel();
   if (!channel)
     return;
 

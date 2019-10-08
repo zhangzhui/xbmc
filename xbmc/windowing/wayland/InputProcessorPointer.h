@@ -8,14 +8,14 @@
 
 #pragma once
 
+#include "Seat.h"
+#include "input/XBMC_keysym.h"
+#include "utils/Geometry.h"
+#include "windowing/XBMC_events.h"
+
 #include <cstdint>
 
 #include <wayland-client-protocol.hpp>
-
-#include "input/XBMC_keysym.h"
-#include "utils/Geometry.h"
-#include "Seat.h"
-#include "windowing/XBMC_events.h"
 
 namespace KODI
 {
@@ -31,7 +31,7 @@ public:
   virtual void OnPointerLeave() {}
   virtual void OnPointerEvent(XBMC_Event& event) = 0;
 protected:
-  ~IInputHandlerPointer() {}
+  ~IInputHandlerPointer() = default;
 };
 
 class CInputProcessorPointer final : public IRawInputHandlerPointer

@@ -8,35 +8,35 @@
 
 #include "VideoThumbLoader.h"
 
-#include <algorithm>
-#include <cstdlib>
-#include <utility>
-
-#include "cores/VideoPlayer/DVDFileInfo.h"
 #include "FileItem.h"
+#include "GUIUserMessages.h"
 #include "ServiceBroker.h"
+#include "TextureCache.h"
+#include "URL.h"
+#include "cores/VideoPlayer/DVDFileInfo.h"
+#include "cores/VideoSettings.h"
 #include "filesystem/Directory.h"
 #include "filesystem/DirectoryCache.h"
 #include "filesystem/StackDirectory.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/StereoscopicsManager.h"
-#include "GUIUserMessages.h"
 #include "music/MusicDatabase.h"
 #include "settings/AdvancedSettings.h"
-#include "settings/lib/Setting.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "cores/VideoSettings.h"
-#include "TextureCache.h"
-#include "URL.h"
-#include "utils/log.h"
+#include "settings/lib/Setting.h"
 #include "utils/EmbeddedArt.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
-#include "video/tags/VideoInfoTagLoaderFactory.h"
+#include "utils/log.h"
 #include "video/VideoDatabase.h"
 #include "video/VideoInfoTag.h"
+#include "video/tags/VideoInfoTagLoaderFactory.h"
+
+#include <algorithm>
+#include <cstdlib>
+#include <utility>
 
 using namespace XFILE;
 using namespace VIDEO;
@@ -318,7 +318,7 @@ bool CVideoThumbLoader::LoadItemCached(CFileItem* pItem)
   }
 
   // video db items normally have info in the database
-  if (pItem->HasVideoInfoTag() && !pItem->HasArt("thumb"))
+  if (pItem->HasVideoInfoTag() && !pItem->GetProperty("libraryartfilled").asBoolean())
   {
     FillLibraryArt(*pItem);
 
@@ -339,7 +339,7 @@ bool CVideoThumbLoader::LoadItemCached(CFileItem* pItem)
   {
     std::vector<std::string> artTypes = GetArtTypes(pItem->HasVideoInfoTag() ? pItem->GetVideoInfoTag()->m_type : "");
     if (find(artTypes.begin(), artTypes.end(), "thumb") == artTypes.end())
-      artTypes.push_back("thumb"); // always look for "thumb" art for files
+      artTypes.emplace_back("thumb"); // always look for "thumb" art for files
     for (std::vector<std::string>::const_iterator i = artTypes.begin(); i != artTypes.end(); ++i)
     {
       std::string type = *i;
@@ -396,7 +396,7 @@ bool CVideoThumbLoader::LoadItemLookup(CFileItem* pItem)
   std::map<std::string, std::string> artwork = pItem->GetArt();
   std::vector<std::string> artTypes = GetArtTypes(pItem->HasVideoInfoTag() ? pItem->GetVideoInfoTag()->m_type : "");
   if (find(artTypes.begin(), artTypes.end(), "thumb") == artTypes.end())
-    artTypes.push_back("thumb"); // always look for "thumb" art for files
+    artTypes.emplace_back("thumb"); // always look for "thumb" art for files
   for (std::vector<std::string>::const_iterator i = artTypes.begin(); i != artTypes.end(); ++i)
   {
     std::string type = *i;
@@ -557,6 +557,7 @@ bool CVideoThumbLoader::FillLibraryArt(CFileItem &item)
     }
     m_videoDatabase->Close();
   }
+  item.SetProperty("libraryartfilled", true);
   return !item.GetArt().empty();
 }
 

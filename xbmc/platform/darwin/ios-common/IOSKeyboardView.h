@@ -6,8 +6,9 @@
  *  See LICENSES/README.md for more information.
  */
 
-#import <UIKit/UIKit.h>
 #include "platform/darwin/ios-common/IOSKeyboard.h"
+
+#import <UIKit/UIKit.h>
 
 @interface KeyboardView : UIView <UITextFieldDelegate>
 {
@@ -22,7 +23,7 @@
   CGRect _kbRect;
 }
 
-@property (nonatomic, retain) NSMutableString *text;
+@property(nonatomic, strong) NSMutableString* text;
 @property (getter = isConfirmed) BOOL _confirmed;
 @property (assign, setter = registerKeyboard:) CIOSKeyboard *_iosKeyboard;
 @property CGRect _frame;
